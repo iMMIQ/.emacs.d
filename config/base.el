@@ -40,3 +40,29 @@
 ;; Load additional keybindings from an external file
 (load (expand-file-name "config/keybind.el" user-emacs-directory))
 
+;; Set default coding system to UTF-8
+(prefer-coding-system 'utf-8)
+(setq locale-coding-system 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
+(setq coding-system-for-read 'utf-8)
+(setq coding-system-for-write 'utf-8)
+
+;; Automatically use UTF-8 encoding when opening files
+(modify-coding-system-alist 'file "" 'utf-8)
+
+;; Set language environment to UTF-8
+(set-language-environment "UTF-8")
+
+;; Set all new buffers to use UTF-8 encoding by default
+(setq buffer-file-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
+(setq-default buffer-file-coding-system 'utf-8)
+(setq-default default-buffer-file-coding-system 'utf-8)
+
+;; Use UTF-8 encoding when saving files
+(add-hook 'before-save-hook 'set-buffer-file-coding-system)
+
+;; Display Unicode characters
+(setq-default bidi-display-reordering nil)

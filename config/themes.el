@@ -36,7 +36,29 @@
 ;; Install and set up the Doom modeline.
 (straight-use-package 'doom-modeline)
 (require 'doom-modeline)
+(setq doom-modeline-height 25
+      doom-modeline-bar-width 3
+      doom-modeline-buffer-file-name-style 'truncate-upto-project
+      doom-modeline-icon t
+      doom-modeline-major-mode-icon t
+      doom-modeline-major-mode-color-icon t
+      doom-modeline-minor-modes nil
+      doom-modeline-enable-word-count t
+      doom-modeline-buffer-encoding nil
+      doom-modeline-indent-info nil)
 (add-hook 'after-init-hook #'doom-modeline-mode)
+
+;; Set the font for Doom Emacs
+(setq doom-font (font-spec :family "Source Code Pro" :size 14)
+      doom-variable-pitch-font (font-spec :family "Noto Sans" :size 13)
+      doom-unicode-font (font-spec :family "Noto Sans Mono" :size 13)
+      doom-big-font (font-spec :family "Source Code Pro" :size 20))
+
+;; Use all-the-icons package for additional icons
+(if (display-graphic-p)
+  (progn
+    (straight-use-package 'all-the-icons)
+    (require 'all-the-icons)))
 
 ;; Install and set up the Winum package for window management.
 (straight-use-package 'winum)
