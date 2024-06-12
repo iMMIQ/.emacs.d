@@ -36,4 +36,4 @@
 ;; Load additional configuration files for themes and base settings
 (load (expand-file-name "config/themes.el" user-emacs-directory))
 (load (expand-file-name "config/base.el" user-emacs-directory))
-
+(load (expand-file-name "config/lsp.el" user-emacs-directory))
