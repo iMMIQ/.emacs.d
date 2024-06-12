@@ -39,15 +39,15 @@
   :states 'normal
   :keymaps 'override
   ;; Window select
-  "1" 'winum-select-window-1
-  "2" 'winum-select-window-2
-  "3" 'winum-select-window-3
-  "4" 'winum-select-window-4
-  "5" 'winum-select-window-5
-  "6" 'winum-select-window-6
-  "7" 'winum-select-window-7
-  "8" 'winum-select-window-8
-  "9" 'winum-select-window-9
+  "1" '(winum-select-window-1 :which-key "select-window-1")
+  "2" '(winum-select-window-2 :which-key "select-window-2")
+  "3" '(winum-select-window-3 :which-key "select-window-3")
+  "4" '(winum-select-window-4 :which-key "select-window-4")
+  "5" '(winum-select-window-5 :which-key "select-window-5")
+  "6" '(winum-select-window-6 :which-key "select-window-6")
+  "7" '(winum-select-window-7 :which-key "select-window-7")
+  "8" '(winum-select-window-8 :which-key "select-window-8")
+  "9" '(winum-select-window-9 :which-key "select-window-9")
   ;; Quit
   "qq" 'kill-emacs
   "qR" 'restart-emacs
@@ -79,12 +79,6 @@
   "hf" 'describe-function
   "hv" 'describe-variable
   "hm" 'describe-mode
-  ;; Projectile
-  "pf" 'counsel-projectile-find-file
-  "pp" 'counsel-projectile-switch-project
-  "pb" 'counsel-projectile-switch-to-buffer
-  "pa" 'counsel-projectile-ag
-  "pg" 'counsel-projectile-rg
   ;; Eshell
   "'" 'eshell
   ;; Others
