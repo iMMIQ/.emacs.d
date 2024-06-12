@@ -30,9 +30,6 @@
 ;; Set the Emacs theme to atom-one-dark
 (setq emacs-theme 'atom-one-dark)
 
-;; Set the default font to JetBrains Mono with a size of 14
-(set-face-attribute 'default nil :font "JetBrains Mono 14")
-
 ;; Load additional configuration files for themes and base settings
 (load (expand-file-name "config/themes.el" user-emacs-directory))
 (load (expand-file-name "config/base.el" user-emacs-directory))

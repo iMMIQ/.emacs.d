@@ -2,16 +2,18 @@
   "Load a specified Emacs theme."
   ;; Convert the theme to its string name if it's a symbol.
   (let* ((theme-name (if (symbolp theme)
-                         (symbol-name theme)
-                       theme))
-         ;; Remove the "-theme" suffix if it exists.
-         (full-theme-name (if (string-suffix-p "-theme" theme-name)
-                              (substring theme-name 0 (- (length theme-name) 6))
-                            theme-name)))
+			 (symbol-name theme)
+		       theme))
+	 ;; Remove the "-theme" suffix if it exists.
+	 (full-theme-name (if (string-suffix-p "-theme" theme-name)
+			      (substring theme-name 0 (- (length theme-name) 6))
+			    theme-name)))
     ;; Try to install and load the theme, and display a message if it fails.
     (if (straight-use-package (intern (concat full-theme-name "-theme")))
-        (load-theme (intern full-theme-name) t)
+	(load-theme (intern full-theme-name) t)
       (message "Failed to load theme: %s" theme))))
+
+(add-to-list 'initial-frame-alist '(fullscreen . maximized))
 
 ;; Load the specified theme.
 (themes/load-theme emacs-theme)
@@ -48,17 +50,8 @@
       doom-modeline-indent-info nil)
 (add-hook 'after-init-hook #'doom-modeline-mode)
 
-;; Set the font for Doom Emacs
-(setq doom-font (font-spec :family "Source Code Pro" :size 14)
-      doom-variable-pitch-font (font-spec :family "Noto Sans" :size 13)
-      doom-unicode-font (font-spec :family "Noto Sans Mono" :size 13)
-      doom-big-font (font-spec :family "Source Code Pro" :size 20))
-
-;; Use all-the-icons package for additional icons
-(if (display-graphic-p)
-  (progn
-    (straight-use-package 'all-the-icons)
-    (require 'all-the-icons)))
+;; Set the default font to JetBrains Mono with a size of 14
+(set-face-attribute 'default nil :font "JetBrains Mono 14")
 
 ;; Install and set up the Winum package for window management.
 (straight-use-package 'winum)
