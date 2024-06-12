@@ -19,11 +19,11 @@
     "SPC s" "Search"
     "SPC h" "Help"
     "SPC p" "Projectile"
-    "SPC g" "Magit"
+    "SPC g" "Version control"
+    "SPC g v" "version control"
     "SPC o" "Org Mode"
     "SPC t" "Treemacs"
     "SPC '" "Eshell"
-    "SPC !" "Shell command"
     "SPC SPC" "M-X"))
 
 (eval-after-load 'general
@@ -34,6 +34,8 @@
 
 (general-create-definer emacs-local-leader
   :prefix "SPC m")  ;; Create a general definer for local leader key with prefix SPC m
+
+(require 'restart-emacs)
 
 (emacs-leader
   :states 'normal
@@ -82,6 +84,5 @@
   ;; Eshell
   "'" 'eshell
   ;; Others
-  "!" 'shell-command
   "SPC" '(counsel-M-x :wk "M-x")
   )

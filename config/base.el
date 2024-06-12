@@ -11,6 +11,8 @@
 ;; Load and configure the Evil Matchit package (Vim's % matching for tags, etc.)
 (straight-use-package 'evil-matchit)
 
+(straight-use-package 'restart-emacs)
+
 ;; Enable Evil mode (Vim emulation)
 (require 'evil)
 (evil-mode 1)
