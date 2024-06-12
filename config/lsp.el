@@ -23,3 +23,15 @@
             (unless (display-graphic-p)
               (with-eval-after-load 'acm
                 (require 'acm-terminal)))))
+
+
+;; Load python-mode when opening .py files
+(add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
+
+;; Enable lsp-bridge when python-mode starts
+(add-hook 'python-mode-hook (lambda ()
+			      ;; Configure Python interpreter and pylsp language server
+			      (setq lsp-bridge-python-command "python3")  ;; Specify the Python interpreter
+			      (setq lsp-bridge-python-lsp-server "pylsp")     ;; Specify pylsp as the language server
+                              (require 'lsp-bridge)
+                              (lsp-bridge-mode)))
