@@ -1,36 +1,42 @@
-;; Define the variable bootstrap-version
+;; Define the bootstrap version
 (defvar bootstrap-version)
 
-;; Let-binding to define the bootstrap-file path and bootstrap-version
+;; Define the bootstrap file path
 (let ((bootstrap-file
        (expand-file-name
         "straight/repos/straight.el/bootstrap.el"
-        ;; Use the straight-base-dir if bound and true, otherwise use user-emacs-directory
         (or (bound-and-true-p straight-base-dir)
             user-emacs-directory)))
       (bootstrap-version 7))
-  ;; Check if the bootstrap-file does not exist
+
+  ;; If the bootstrap file does not exist, download and evaluate it
   (unless (file-exists-p bootstrap-file)
-    ;; Retrieve the bootstrap script from the straight.el repository and evaluate it
     (with-current-buffer
         (url-retrieve-synchronously
          "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
          'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
-  ;; Load the bootstrap file without messages
+
+  ;; Load the bootstrap file
   (load bootstrap-file nil 'nomessage))
 
-;; Set the default clone depth for straight.el to 1
+;; Use straight to manage use-package
+(straight-use-package 'use-package)
+
+;; Enable statistics for use-package
+(setq use-package-compute-statistics t)
+
+;; Set the default clone depth for git to 1
 (setq straight-vc-git-default-clone-depth 1)
 
-;; Disable the automatic package initialization at startup
+;; Disable package.el initialization at startup
 (setq package-enable-at-startup nil)
 
-;; Set the Emacs theme to atom-one-dark
+;; Set the theme to 'atom-one-dark'
 (setq emacs-theme 'atom-one-dark)
 
-;; Load additional configuration files for themes and base settings
+;; Load various configuration files
 (load (expand-file-name "config/themes.el" user-emacs-directory))
 (load (expand-file-name "config/base.el" user-emacs-directory))
 (load (expand-file-name "config/vcs.el" user-emacs-directory))

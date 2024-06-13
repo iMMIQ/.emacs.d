@@ -1,46 +1,71 @@
-;; Load and configure the Evil package (Vim emulation in Emacs)
-(straight-use-package 'evil)
-;; Load and configure the Ivy package (a generic completion mechanism)
-(straight-use-package 'ivy)
-;; Load and configure the Counsel package (Ivy-enhanced versions of common Emacs commands)
-(straight-use-package 'counsel)
-;; Load and configure the Evil Surround package (Vim's surround functionality)
-(straight-use-package 'evil-surround)
-;; Load and configure the Evil Anzu package (enhanced search in Emacs with evil)
-(straight-use-package 'evil-anzu)
-;; Load and configure the Evil Matchit package (Vim's % matching for tags, etc.)
-(straight-use-package 'evil-matchit)
+;; Load and configure the 'evil' package for Vim emulation
+(use-package evil
+  :straight t
+  :defer t
+  :init
+  (evil-mode 1))
 
-(straight-use-package 'restart-emacs)
+;; Load and configure the 'ivy' package for completion and narrowing
+(use-package ivy
+  :straight t
+  :defer t
+  :ensure t
+  :diminish (ivy-mode)
+  :init
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "(%d/%d) ")
+  (setq enable-recursive-minibuffers t)
+  (setq ivy-initial-inputs-alist nil)
+  :config
+  (ivy-mode 1))
 
-;; Enable Evil mode (Vim emulation)
-(require 'evil)
-(evil-mode 1)
+;; Load the 'counsel' package which provides additional commands for 'ivy'
+(use-package counsel
+  :straight t
+  :after ivy
+  :config (counsel-mode))
 
-;; Enable Ivy mode (generic completion mechanism)
-(require 'ivy)
-(ivy-mode 1)
+(use-package all-the-icons-ivy-rich
+  :straight t
+  :defer t
+  :ensure t
+  :init (all-the-icons-ivy-rich-mode 1))
 
-;; Configure Counsel to use virtual buffers
-(require 'counsel)
-(setq ivy-use-virtual-buffers t)
+(use-package ivy-rich
+  :straight t
+  :defer t
+  :ensure t
+  :init (ivy-rich-mode 1))
 
-;; Enable global Evil Surround mode
-(require 'evil-surround)
-(global-evil-surround-mode 1)
+;; Load and configure the 'evil-surround' package for surrounding text objects
+(use-package evil-surround
+  :straight t
+  :defer t
+  :config
+  (global-evil-surround-mode 1))
 
-;; Enable global Anzu mode with Evil integration
-(require 'evil-anzu)
-(global-anzu-mode +1)
+;; Load and configure the 'evil-anzu' package for showing search matches
+(use-package evil-anzu
+  :straight t
+  :defer t
+  :config
+  (global-anzu-mode +1))
 
-;; Enable global Evil Matchit mode
-(require 'evil-matchit)
-(global-evil-matchit-mode 1)
+;; Load and configure the 'evil-matchit' package for matching text objects
+(use-package evil-matchit
+  :straight t
+  :defer t
+  :config
+  (global-evil-matchit-mode 1))
 
-;; Load additional keybindings from an external file
+;; Load the 'restart-emacs' package for restarting Emacs
+(use-package restart-emacs
+  :straight t)
+
+;; Load custom keybindings from 'keybind.el'
 (load (expand-file-name "config/keybind.el" user-emacs-directory))
 
-;; Set default coding system to UTF-8
+;; Set UTF-8 as the default coding system for various environments
 (prefer-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8)
 (set-terminal-coding-system 'utf-8)
@@ -48,21 +73,12 @@
 (setq default-buffer-file-coding-system 'utf-8)
 (setq coding-system-for-read 'utf-8)
 (setq coding-system-for-write 'utf-8)
-
-;; Automatically use UTF-8 encoding when opening files
 (modify-coding-system-alist 'file "" 'utf-8)
-
-;; Set language environment to UTF-8
 (set-language-environment "UTF-8")
-
-;; Set all new buffers to use UTF-8 encoding by default
 (setq buffer-file-coding-system 'utf-8)
 (setq default-buffer-file-coding-system 'utf-8)
 (setq-default buffer-file-coding-system 'utf-8)
 (setq-default default-buffer-file-coding-system 'utf-8)
 
-;; Use UTF-8 encoding when saving files
-(add-hook 'before-save-hook 'set-buffer-file-coding-system)
-
-;; Display Unicode characters
+;; Disable bidirectional text reordering for performance improvement
 (setq-default bidi-display-reordering nil)

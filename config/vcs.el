@@ -1,51 +1,65 @@
-(straight-use-package 'magit)
-(require 'magit)
-
-(setq magit-log-section-commit-count 20) ; Set the number of commits shown in Magit log sections.
-(add-hook 'magit-mode-hook 'display-line-numbers-mode) ; Enable line numbers in Magit mode.
-(setq magit-diff-refine-hunk 'all) ; Refine diff hunks to highlight word changes.
-
-(defun enable-flyspell-if-installed ()
-  "Enable flyspell mode if available."
-  (when (require 'flyspell nil 'noerror)
-    (flyspell-mode 1)))
-
-;; Configure fullscreen behavior for Magit status buffer.
-(if (package-installed-p 'fullframe)
+;; Load and configure 'magit' for Git integration
+(use-package magit
+  :straight t
+  :defer t
+  :init
+  (setq magit-log-section-commit-count 20) ;; Show 20 commits in log sections
+  (setq magit-diff-refine-hunk 'all)       ;; Highlight differences within lines
+  :hook
+  (magit-mode . display-line-numbers-mode) ;; Enable line numbers in magit mode
+  (git-commit-mode . enable-flyspell-if-installed) ;; Enable flyspell in commit mode
+  :config
+  ;; Function to enable flyspell if it's installed
+  (defun enable-flyspell-if-installed ()
+    (when (require 'flyspell nil 'noerror)
+      (flyspell-mode 1)))
+  
+  ;; Use 'fullframe' package if installed, otherwise configure fullscreen behavior manually
+  (if (package-installed-p 'fullframe)
+      (progn
+	(use-package fullframe
+	  :straight t
+	  :config
+	  (fullframe magit-status magit-mode-quit-window)))
     (progn
-      (straight-use-package 'fullframe)
-      (fullframe magit-status magit-mode-quit-window))
-  (progn
-    (defadvice magit-status (around magit-fullscreen activate)
-      "Toggle fullscreen when opening Magit status buffer."
-      (window-configuration-to-register :magit-fullscreen)
-      ad-do-it
-      (delete-other-windows))
-    (defun magit-quit-session ()
-      "Quit Magit session and restore previous window configuration."
-      (interactive)
-      (kill-buffer)
-      (jump-to-register :magit-fullscreen))
-    (define-key magit-status-mode-map (kbd "q") 'magit-quit-session)))
+      (defadvice magit-status (around magit-fullscreen activate)
+	(window-configuration-to-register :magit-fullscreen)
+	ad-do-it
+	(delete-other-windows))
+      (defun magit-quit-session ()
+	(interactive)
+	(kill-buffer)
+	(jump-to-register :magit-fullscreen))
+      (define-key magit-status-mode-map (kbd "q") 'magit-quit-session)))
+  
+  ;; Use 'magit-gitflow' if 'git-flow' executable is found
+  (if (executable-find "git-flow")
+      (progn
+	(use-package magit-gitflow
+	  :straight t
+	  :hook (magit-mode . turn-on-magit-gitflow)))))
 
-(add-hook 'git-commit-mode-hook 'enable-flyspell-if-installed) ; Enable flyspell in git commit mode.
-(provide 'init-magit)
+;; Load and configure 'diff-hl' for highlighting changes in buffers
+(use-package diff-hl
+  :straight t
+  :defer t
+  :hook
+  (magit-post-refresh . diff-hl-magit-post-refresh) ;; Update diff-hl after magit refresh
+  :config
+  (global-diff-hl-mode)) ;; Enable diff-hl globally
 
-(if (executable-find "git-glow")
-    (progn
-      (straight-use-package 'magit-gitflow)
-      (require 'magit-gitflow)
-      (add-hook 'magit-mode-hook 'turn-on-magit-gitflow)))
+;; Load and configure 'magit-todos' for displaying TODOs in magit
+(use-package magit-todos
+  :straight t
+  :defer t
+  :hook (magit-mode . magit-todos-mode))
 
-(straight-use-package 'diff-hl)
-(add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
-(global-diff-hl-mode)
-
-(straight-use-package 'magit-todos)
-(magit-todos-mode)
-
-(straight-use-package 'transient)
-(setq transient-default-level 5)
+;; Load and configure 'transient' for better popup management in magit
+(use-package transient
+  :straight t
+  :defer t
+  :init
+  (setq transient-default-level 5)) ;; Set default transient level to 5
 
 (emacs-leader
   :states 'normal

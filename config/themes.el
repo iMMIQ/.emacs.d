@@ -1,60 +1,91 @@
+;; Function to load a theme, installing it with straight.el if necessary
 (defun themes/load-theme (theme)
-  "Load a specified Emacs theme."
-  ;; Convert the theme to its string name if it's a symbol.
   (let* ((theme-name (if (symbolp theme)
 			 (symbol-name theme)
 		       theme))
-	 ;; Remove the "-theme" suffix if it exists.
 	 (full-theme-name (if (string-suffix-p "-theme" theme-name)
 			      (substring theme-name 0 (- (length theme-name) 6))
 			    theme-name)))
-    ;; Try to install and load the theme, and display a message if it fails.
     (if (straight-use-package (intern (concat full-theme-name "-theme")))
 	(load-theme (intern full-theme-name) t)
       (message "Failed to load theme: %s" theme))))
 
-(add-to-list 'initial-frame-alist '(fullscreen . maximized))
+;; Load and configure 'all-the-icons' for graphical icons support
+(use-package all-the-icons
+  :straight t
+  :defer t
+  :if (display-graphic-p)
+  :config
+  (unless (member "all-the-icons" (font-family-list))
+    (all-the-icons-install-fonts t)))
 
-;; Load the specified theme.
+;; Load and configure 'dashboard' for a custom Emacs startup screen
+(use-package dashboard
+  :straight t
+  :init
+  (setq dashboard-banner-logo-title "Welcome to GNU Emacs"
+	dashboard-startup-banner (expand-file-name "image/GNUEmacs.png" user-emacs-directory)
+	dashboard-set-heading-icons t
+	dashboard-set-file-icons t
+	dashboard-center-content t
+	dashboard-items '((recents  . 5)
+			  (bookmarks . 5)
+			  (projects . 5)
+			  (agenda . 5)
+			  (registers . 5)))
+  :config
+  (dashboard-setup-startup-hook))
+
+;; Load and configure 'doom-modeline' for an enhanced modeline
+(use-package doom-modeline
+  :straight t
+  :defer t
+  :hook (after-init . doom-modeline-mode)
+  :custom
+  (doom-modeline-height 25)
+  (doom-modeline-bar-width 3)
+  (doom-modeline-buffer-file-name-style 'truncate-upto-project)
+  (doom-modeline-icon t)
+  (doom-modeline-major-mode-icon t)
+  (doom-modeline-major-mode-color-icon t)
+  (doom-modeline-minor-modes nil)
+  (doom-modeline-enable-word-count t)
+  (doom-modeline-buffer-encoding nil)
+  (doom-modeline-indent-info nil)
+  :config
+  (unless (member "Symbols Nerd Font Mono" (font-family-list))
+    (nerd-icons-install-fonts t)))
+
+;; Load the configured theme
 (themes/load-theme emacs-theme)
 
-;; Disable the menu bar.
+;; Load and configure 'winum' for window number management
+(use-package winum
+  :straight t
+  :defer t
+  :config
+  (winum-mode))
+
+;; Start Emacs maximized
+(add-to-list 'initial-frame-alist '(fullscreen . maximized))
+
+;; Disable menu bar, tool bar, and scroll bar
 (menu-bar-mode -1)
-;; Disable the tool bar.
 (tool-bar-mode -1)
-;; Disable the scroll bar.
 (scroll-bar-mode -1)
-;; Set the frame title format to nil.
+
+;; Set frame title format to nil
 (setq frame-title-format nil)
-;; Do not show trailing whitespace by default.
+
+;; Do not show trailing whitespace by default
 (setq-default show-trailing-whitespace nil)
-;; Disable the startup screen.
+
+;; Disable the startup screen
 (setq inhibit-startup-screen t)
-;; Enable global display of line numbers.
+
+;; Enable global line numbers
 (global-display-line-numbers-mode 1)
-;; Enable line numbers in programming modes.
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
 
-;; Install and set up the Doom modeline.
-(straight-use-package 'doom-modeline)
-(require 'doom-modeline)
-(setq doom-modeline-height 25
-      doom-modeline-bar-width 3
-      doom-modeline-buffer-file-name-style 'truncate-upto-project
-      doom-modeline-icon t
-      doom-modeline-major-mode-icon t
-      doom-modeline-major-mode-color-icon t
-      doom-modeline-minor-modes nil
-      doom-modeline-enable-word-count t
-      doom-modeline-buffer-encoding nil
-      doom-modeline-indent-info nil)
-(add-hook 'after-init-hook #'doom-modeline-mode)
-
-;; Set the default font to JetBrains Mono with a size of 14
+;; Set the default font to 'JetBrains Mono 14'
 (set-face-attribute 'default nil :font "JetBrains Mono 14")
-
-;; Install and set up the Winum package for window management.
-(straight-use-package 'winum)
-(require 'winum)
-(winum-mode)
-

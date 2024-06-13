@@ -1,37 +1,41 @@
-(straight-use-package 'yasnippet)
+;; Load and configure 'yasnippet' for snippet support
+(use-package yasnippet
+  :straight t
+  :defer t
+  :config
+  (yas-global-mode))
 
-(straight-use-package
- '(lsp-bridge :host github
-              :repo "manateelazycat/lsp-bridge"
-              :files ("*.el" "*.py" "acm" "core" "langserver"
-                      "multiserver" "resources")))
+;; Load and configure 'lsp-bridge' for Language Server Protocol support
+(use-package lsp-bridge
+  :straight (lsp-bridge :host github
+			:repo "manateelazycat/lsp-bridge"
+			:files ("*.el" "*.py" "acm" "core" "langserver"
+				"multiserver" "resources"))
+  :defer t
+  :config
+  (global-lsp-bridge-mode))
 
+;; Load and configure 'apheleia' for code formatting
+(use-package apheleia
+  :straight t
+  :config
+  (apheleia-global-mode))
+
+;; For non-graphical environments, load 'popon' and 'acm-terminal'
 (unless (display-graphic-p)
-  (straight-use-package
-   '(popon :host nil :repo "https://codeberg.org/akib/emacs-popon.git"))
-  (straight-use-package
-   '(acm-terminal :host github :repo "twlz0ne/acm-terminal")))
+  (use-package popon
+    :straight (popon :host nil :repo "https://codeberg.org/akib/emacs-popon.git")
+    :defer t)
+  (use-package acm-terminal
+    :straight t
+    :after acm))
 
-(add-hook 'emacs-startup-hook
+;; Python mode specific configurations
+(add-hook 'python-mode-hook
           (lambda ()
-            (require 'yasnippet)
-            (yas-global-mode 1)
-
-            (require 'lsp-bridge)
-            (global-lsp-bridge-mode)
-
-            (unless (display-graphic-p)
-              (with-eval-after-load 'acm
-                (require 'acm-terminal)))))
-
-
-;; Load python-mode when opening .py files
-(add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
-
-;; Enable lsp-bridge when python-mode starts
-(add-hook 'python-mode-hook (lambda ()
-			      ;; Configure Python interpreter and pylsp language server
-			      (setq lsp-bridge-python-command "python3")  ;; Specify the Python interpreter
-			      (setq lsp-bridge-python-lsp-server "pylsp")     ;; Specify pylsp as the language server
-                              (require 'lsp-bridge)
-                              (lsp-bridge-mode)))
+            (setq lsp-bridge-python-command "python3")
+            (setq lsp-bridge-python-lsp-server "pylsp")
+            (setq lsp-bridge-enable-hover-diagnostic t)
+            (lsp-bridge-mode)
+            ;; Configure 'black' formatter for 'apheleia'
+            (setf (alist-get 'black apheleia-formatters) '("black" "-S" "-l" "120" "-"))))

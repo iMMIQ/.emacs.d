@@ -1,41 +1,45 @@
-(straight-use-package 'general)  ;; Install the 'general' package using straight.el
-(straight-use-package 'which-key)  ;; Install the 'which-key' package using straight.el
+;; Install and configure the 'which-key' package using use-package with deferred loading
+(use-package which-key
+  :straight t
+  :defer t
+  :init
+  (setq which-key-show-prefix 'SPC)
+  (setq which-key-idle-delay 0.5)
+  :config
+  (which-key-mode))
 
-(require 'general)  ;; Load the 'general' package
-(require 'which-key)  ;; Load the 'which-key' package
+;; Install and configure the 'general' package using use-package with deferred loading
+(use-package general
+  :straight t
+  :defer t
+  :config
+  ;; Declare prefixes after 'general' is loaded
+  (defun declare-prefixes ()
+    "Declare prefixes for emacs-leader keybindings."
+    (which-key-add-key-based-replacements
+      "SPC q" "Quit"
+      "SPC f" "Files"
+      "SPC b" "Buffers"
+      "SPC w" "Windows"
+      "SPC e" "Editing"
+      "SPC s" "Search"
+      "SPC h" "Help"
+      "SPC p" "Projectile"
+      "SPC g" "Version control"
+      "SPC g v" "version control"
+      "SPC o" "Org Mode"
+      "SPC t" "Treemacs"
+      "SPC '" "Eshell"
+      "SPC SPC" "M-X"))
+  
+  (eval-after-load 'general
+    '(declare-prefixes))
 
-(setq which-key-show-prefix 'SPC)  ;; Set which-key to show key prefixes starting with SPC
-(which-key-mode)  ;; Enable which-key mode
-(setq which-key-idle-delay 0.5)  ;; Set the idle delay for which-key to 0.5 seconds
+  (general-create-definer emacs-leader
+    :prefix "SPC")
 
-(defun declare-prefixes ()
-  "Declare prefixes for emacs-leader keybindings."
-  (which-key-add-key-based-replacements
-    "SPC q" "Quit"
-    "SPC f" "Files"
-    "SPC b" "Buffers"
-    "SPC w" "Windows"
-    "SPC e" "Editing"
-    "SPC s" "Search"
-    "SPC h" "Help"
-    "SPC p" "Projectile"
-    "SPC g" "Version control"
-    "SPC g v" "version control"
-    "SPC o" "Org Mode"
-    "SPC t" "Treemacs"
-    "SPC '" "Eshell"
-    "SPC SPC" "M-X"))
-
-(eval-after-load 'general
-  '(declare-prefixes))  ;; Declare prefixes after 'general' is loaded
-
-(general-create-definer emacs-leader
-  :prefix "SPC")  ;; Create a general definer for leader key with prefix SPC
-
-(general-create-definer emacs-local-leader
-  :prefix "SPC m")  ;; Create a general definer for local leader key with prefix SPC m
-
-(require 'restart-emacs)
+  (general-create-definer emacs-local-leader
+    :prefix "SPC m"))
 
 (emacs-leader
   :states 'normal
@@ -54,7 +58,7 @@
   "qq" 'kill-emacs
   "qR" 'restart-emacs
   ;; Files
-  "ff" 'find-file
+  "ff" 'counsel-find-file
   "fs" 'save-buffer
   "fr" 'counsel-recentf
   "fR" 'rename-file
