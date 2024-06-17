@@ -42,3 +42,4 @@
 (load (expand-file-name "config/vcs.el" user-emacs-directory))
 (load (expand-file-name "config/lsp.el" user-emacs-directory))
 (load (expand-file-name "config/project.el" user-emacs-directory))
+(load (expand-file-name "config/treemacs.el" user-emacs-directory))
