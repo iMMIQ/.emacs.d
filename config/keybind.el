@@ -24,11 +24,8 @@
       "SPC e" "Editing"
       "SPC s" "Search"
       "SPC h" "Help"
-      "SPC p" "Projectile"
       "SPC g" "Version control"
       "SPC g v" "version control"
-      "SPC o" "Org Mode"
-      "SPC t" "Treemacs"
       "SPC '" "Eshell"
       "SPC SPC" "M-X"))
   
