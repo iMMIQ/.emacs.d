@@ -16,12 +16,14 @@
 	 (t "pyright")))
   (setq lsp-bridge-enable-hover-diagnostic t)
 
-  (dolist (formatter
-           '(("black" . ("black" "-S" "-l" "120" "-"))
-             ("yapf" . ("yapf" "--style" "{based_on_style: pep8, column_limit: 120}" "-"))
-             ("autopep8" . ("autopep8" "--max-line-length" "120" "-"))))
-    (when (executable-find (car formatter))
-      (setf (alist-get (intern (car formatter)) apheleia-formatters) (cdr formatter))))
+  (catch 'found
+    (dolist (formatter
+             '(("black" . ("black" "-S" "-l" "120" "-"))
+               ("yapf" . ("yapf" "--style" "{based_on_style: pep8, column_limit: 120}" "-"))
+               ("autopep8" . ("autopep8" "--max-line-length" "120" "-"))))
+      (when (executable-find (car formatter))
+	(setf (alist-get (intern (car formatter)) apheleia-formatters) (cdr formatter))
+	(throw 'found nil))))
 
   :config
   (lsp-bridge-mode))
