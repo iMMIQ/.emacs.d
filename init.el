@@ -45,3 +45,4 @@
 (load (expand-file-name "config/treemacs.el" user-emacs-directory))
 ;; Language
 (load (expand-file-name "config/python.el" user-emacs-directory))
+(load (expand-file-name "config/rust.el" user-emacs-directory))

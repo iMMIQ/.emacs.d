@@ -11,9 +11,7 @@
 			:repo "manateelazycat/lsp-bridge"
 			:files ("*.el" "*.py" "acm" "core" "langserver"
 				"multiserver" "resources"))
-  :defer t
-  :config
-  (global-lsp-bridge-mode))
+  :defer t)
 
 ;; Load and configure 'apheleia' for code formatting
 (use-package apheleia
