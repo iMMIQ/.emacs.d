@@ -25,5 +25,5 @@
     :straight (popon :host nil :repo "https://codeberg.org/akib/emacs-popon.git")
     :defer t)
   (use-package acm-terminal
-    :straight t
+    :straight (acm-terminal :host github :repo "twlz0ne/acm-terminal")
     :after acm))
