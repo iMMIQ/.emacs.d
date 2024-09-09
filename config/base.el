@@ -82,3 +82,9 @@
 
 ;; Disable bidirectional text reordering for performance improvement
 (setq-default bidi-display-reordering nil)
+
+(pixel-scroll-precision-mode t)
+(auto-image-file-mode t)
+(global-visual-line-mode t)
+(blink-cursor-mode t)
+(global-display-line-numbers-mode t)
