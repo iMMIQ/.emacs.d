@@ -38,6 +38,17 @@
   (general-create-definer emacs-local-leader
     :prefix "SPC m"))
 
+(defun open-eshell-in-split ()
+  "Open eshell in a small window."
+  (interactive)
+  (let ((display-buffer-alist
+         '(("\\*eshell\\*"
+            (display-buffer-in-side-window)
+            (window-height . 0.3)
+            (side . bottom)
+            (slot . -1)))))
+    (eshell)))
+
 (emacs-leader
   :states 'normal
   :keymaps 'override
@@ -83,7 +94,7 @@
   "hv" 'describe-variable
   "hm" 'describe-mode
   ;; Eshell
-  "'" 'eshell
+  "'" 'open-eshell-in-split
   ;; Others
   "SPC" '(counsel-M-x :wk "M-x")
   )
