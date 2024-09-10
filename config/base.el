@@ -5,38 +5,6 @@
   :init
   (evil-mode 1))
 
-;; Load and configure the 'ivy' package for completion and narrowing
-(use-package ivy
-  :straight t
-  :defer t
-  :ensure t
-  :diminish (ivy-mode)
-  :init
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-count-format "(%d/%d) ")
-  (setq enable-recursive-minibuffers t)
-  (setq ivy-initial-inputs-alist nil)
-  :config
-  (ivy-mode 1))
-
-;; Load the 'counsel' package which provides additional commands for 'ivy'
-(use-package counsel
-  :straight t
-  :after ivy
-  :config (counsel-mode))
-
-(use-package all-the-icons-ivy-rich
-  :straight t
-  :defer t
-  :ensure t
-  :init (all-the-icons-ivy-rich-mode 1))
-
-(use-package ivy-rich
-  :straight t
-  :defer t
-  :ensure t
-  :init (ivy-rich-mode 1))
-
 ;; Load and configure the 'evil-surround' package for surrounding text objects
 (use-package evil-surround
   :straight t
@@ -57,6 +25,8 @@
   :defer t
   :config
   (global-evil-matchit-mode 1))
+
+(load (expand-file-name "config/search.el" user-emacs-directory))
 
 ;; Load the 'restart-emacs' package for restarting Emacs
 (use-package restart-emacs
