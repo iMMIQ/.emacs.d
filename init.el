@@ -36,6 +36,9 @@
 ;; Set the theme to 'atom-one-dark'
 (setq emacs-theme 'atom-one-dark)
 
+(unless (display-graphic-p)
+  (xterm-mouse-mode 1))
+
 ;; Load various configuration files
 (load (expand-file-name "config/themes.el" user-emacs-directory))
 (load (expand-file-name "config/base.el" user-emacs-directory))
