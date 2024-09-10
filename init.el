@@ -47,5 +47,6 @@
 ;; Language
 (load (expand-file-name "config/python.el" user-emacs-directory))
 (load (expand-file-name "config/rust.el" user-emacs-directory))
+(load (expand-file-name "config/verilog.el" user-emacs-directory))
 ;; App
 (load (expand-file-name "config/music.el" user-emacs-directory))
