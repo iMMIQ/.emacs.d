@@ -58,3 +58,4 @@
 (global-visual-line-mode t)
 (blink-cursor-mode t)
 (global-display-line-numbers-mode t)
+(smartparens-global-mode t)
