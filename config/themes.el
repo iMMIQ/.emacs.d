@@ -89,3 +89,8 @@
 
 ;; Set the default font to 'JetBrains Mono 14'
 (set-face-attribute 'default nil :font "JetBrains Mono 14")
+
+(use-package rainbow-delimiters
+  :straight t
+  :defer t
+  :hook (prog-mode . rainbow-delimiters-mode))
