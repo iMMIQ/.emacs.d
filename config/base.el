@@ -58,4 +58,8 @@
 (global-visual-line-mode t)
 (blink-cursor-mode t)
 (global-display-line-numbers-mode t)
-(smartparens-global-mode t)
+
+(use-package smartparens
+  :straight t
+  :config
+  (smartparens-global-mode t))

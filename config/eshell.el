@@ -48,10 +48,6 @@
       (setenv "PATH" new-path)
       (setq eshell-path-env new-path))))
 
-(use-package smartparens
-  :straight t
-  :hook (eshell-mode . smartparens-mode)) ;; Enable smartparens in eshell
-
 (use-package highlight-quoted
   :straight t
   :config (highlight-quoted-mode)) ;; Enable highlighting for quoted expressions
