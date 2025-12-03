@@ -39,18 +39,69 @@
 (unless (display-graphic-p)
   (xterm-mouse-mode 1))
 
-;; Load various configuration files
-(load (expand-file-name "config/themes.el" user-emacs-directory))
-(load (expand-file-name "config/base.el" user-emacs-directory))
-(load (expand-file-name "config/vcs.el" user-emacs-directory))
-(load (expand-file-name "config/lsp.el" user-emacs-directory))
-(load (expand-file-name "config/project.el" user-emacs-directory))
-(load (expand-file-name "config/treemacs.el" user-emacs-directory))
-(load (expand-file-name "config/eshell.el" user-emacs-directory))
-(load (expand-file-name "config/chinese.el" user-emacs-directory))
-;; Language
-(load (expand-file-name "config/python.el" user-emacs-directory))
-(load (expand-file-name "config/rust.el" user-emacs-directory))
-(load (expand-file-name "config/verilog.el" user-emacs-directory))
-;; App
-(load (expand-file-name "config/music.el" user-emacs-directory))
+;; Load configuration files with conditional loading
+;; Core configurations (always load)
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/base.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/vcs.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/lsp.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/project.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/eshell.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/chinese.el" user-emacs-directory)))
+
+;; Language-specific configurations
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/python.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/rust.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/verilog.el" user-emacs-directory)))
+
+;; GUI-specific configurations (only load in graphical mode)
+(use-package emacs
+  :ensure nil
+  :if (display-graphic-p)
+  :config
+  (load (expand-file-name "config/themes.el" user-emacs-directory)))
+
+(use-package emacs
+  :ensure nil
+  :if (display-graphic-p)
+  :config
+  (load (expand-file-name "config/treemacs.el" user-emacs-directory)))
+
+;; Application configurations
+(use-package emacs
+  :ensure nil
+  :config
+  (load (expand-file-name "config/music.el" user-emacs-directory)))
