@@ -1,45 +1,16 @@
-;; Install and configure the 'which-key' package using use-package with deferred loading
-(use-package which-key
-  :straight t
-  :defer t
-  :init
-  (setq which-key-show-prefix 'SPC)
-  (setq which-key-idle-delay 0.5)
-  :config
-  (which-key-mode))
+;;; keybindings.el --- Global keybindings configuration
 
-;; Install and configure the 'general' package using use-package with deferred loading
-(use-package general
-  :straight t
-  :defer t
-  :config
-  ;; Declare prefixes after 'general' is loaded
-  (defun declare-prefixes ()
-    "Declare prefixes for emacs-leader keybindings."
-    (which-key-add-key-based-replacements
-      "SPC q" "Quit"
-      "SPC f" "Files"
-      "SPC b" "Buffers"
-      "SPC w" "Windows"
-      "SPC e" "Editing"
-      "SPC s" "Search"
-      "SPC h" "Help"
-      "SPC g" "Version control"
-      "SPC g v" "version control"
-      "SPC '" "Eshell"
-      "SPC SPC" "M-X"))
-  
-  (eval-after-load 'general
-    '(declare-prefixes))
+;;; Commentary:
+;; Centralized keybinding configuration using general.el.
 
-  (general-create-definer emacs-leader
-    :prefix "SPC")
+;;; Code:
 
-  (general-create-definer emacs-local-leader
-    :prefix "SPC m"))
+;; ====================
+;; Helper Functions
+;; ====================
 
 (defun open-eshell-in-split ()
-  "Open eshell in a small window."
+  "Open eshell in a small window at the bottom."
   (interactive)
   (let ((display-buffer-alist
          '(("\\*eshell\\*"
@@ -49,10 +20,14 @@
             (slot . -1)))))
     (eshell)))
 
+;; ====================
+;; Global Keybindings
+;; ====================
+
 (emacs-leader
   :states 'normal
   :keymaps 'override
-  ;; Window select
+  ;; Window select (1-9)
   "1" '(winum-select-window-1 :which-key "select-window-1")
   "2" '(winum-select-window-2 :which-key "select-window-2")
   "3" '(winum-select-window-3 :which-key "select-window-3")
@@ -95,6 +70,15 @@
   "hm" 'describe-mode
   ;; Eshell
   "'" 'open-eshell-in-split
-  ;; Others
+  ;; M-x
   "SPC" '(counsel-M-x :wk "M-x")
-  )
+  ;; Search
+  "sg" 'counsel-rg
+  "ss" 'swiper
+  "sc" 'counsel-git
+  "sd" 'counsel-git-grep
+  "sp" 'grep-or-fd-ivy
+  "sf" 'grep-or-fd)
+
+(provide 'keybindings)
+;;; keybindings.el ends here

@@ -1,8 +1,7 @@
 ;;; init.el --- Main Emacs configuration file
 
 ;;; Commentary:
-;; This is the main configuration file for Emacs.
-;; It sets up package management and loads modular configuration files.
+;; Main configuration entry point with modular loading system.
 
 ;;; Code:
 
@@ -10,18 +9,14 @@
 ;; Package Management
 ;; ====================
 
-;; Define the bootstrap version
+;; Bootstrap straight.el
 (defvar bootstrap-version)
-
-;; Bootstrap straight.el package manager
 (let ((bootstrap-file
        (expand-file-name
         "straight/repos/straight.el/bootstrap.el"
         (or (bound-and-true-p straight-base-dir)
             user-emacs-directory)))
       (bootstrap-version 7))
-  
-  ;; Download straight.el if not present
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
@@ -29,35 +24,16 @@
          'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
-  
-  ;; Load straight.el
   (load bootstrap-file nil 'nomessage))
 
-;; Use straight to manage use-package
+;; Use straight for use-package
 (straight-use-package 'use-package)
-
-;; Enable use-package statistics
-(setq use-package-compute-statistics t)
-
-;; Set default git clone depth for performance
-(setq straight-vc-git-default-clone-depth 1)
-
-;; Disable built-in package.el to avoid conflicts
-(setq package-enable-at-startup nil)
+(setq use-package-compute-statistics t
+      straight-vc-git-default-clone-depth 1
+      package-enable-at-startup nil)
 
 ;; ====================
-;; Basic Settings
-;; ====================
-
-;; Set default theme
-(setq emacs-theme 'atom-one-dark)
-
-;; Enable xterm mouse mode in terminal
-(unless (display-graphic-p)
-  (xterm-mouse-mode 1))
-
-;; ====================
-;; Configuration Loading
+;; Configuration Loader
 ;; ====================
 
 (defun load-config-file (filename &optional condition)
@@ -73,53 +49,70 @@ If CONDITION is non-nil, only load if CONDITION evaluates to true."
          (warn "Failed to load %s: %s" filename (error-message-string err)))))))
 
 ;; ====================
-;; Core Configurations
-;; ====================
-
-;; Always load core configurations
-(use-package emacs
-  :ensure nil
-  :config
-  (progn
-    (load-config-file "config/base.el")
-    (load-config-file "config/vcs.el")
-    (load-config-file "config/lsp.el")
-    (load-config-file "config/project.el")
-    (load-config-file "config/eshell.el")
-    (load-config-file "config/chinese.el")))
-
-;; ====================
-;; Language Configurations
+;; Core Modules (Always Load)
 ;; ====================
 
 (use-package emacs
   :ensure nil
   :config
-  (progn
-    (load-config-file "config/python.el")
-    (load-config-file "config/rust.el")
-    (load-config-file "config/verilog.el")))
+  (load-config-file "config/core/editor.el")
+  (load-config-file "config/core/evil.el")
+  (load-config-file "config/core/completion.el")
+  (load-config-file "config/core/keybindings.el"))
 
 ;; ====================
-;; GUI-specific Configurations
+;; Tool Modules
+;; ====================
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load-config-file "config/tools/vcs.el")
+  (load-config-file "config/tools/project.el")
+  (load-config-file "config/tools/eshell.el")
+  (load-config-file "config/tools/search.el"))
+
+;; ====================
+;; Language Modules
+;; ====================
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load-config-file "config/lang/lsp.el")
+  (load-config-file "config/lang/python.el")
+  (load-config-file "config/lang/rust.el")
+  (load-config-file "config/lang/verilog.el"))
+
+;; ====================
+;; UI Modules (GUI only)
 ;; ====================
 
 (use-package emacs
   :ensure nil
   :if (display-graphic-p)
   :config
-  (progn
-    (load-config-file "config/themes.el")
-    (load-config-file "config/treemacs.el")))
+  (load-config-file "config/ui/theme.el")
+  (load-config-file "config/ui/themes.el")
+  (load-config-file "config/ui/treemacs.el"))
 
 ;; ====================
-;; Application Configurations
+;; Personal Modules
 ;; ====================
 
 (use-package emacs
   :ensure nil
   :config
-  (load-config-file "config/music.el"))
+  (load-config-file "config/personal/chinese.el")
+  (load-config-file "config/personal/music.el"))
+
+;; ====================
+;; Basic Settings
+;; ====================
+
+;; Enable xterm mouse mode in terminal
+(unless (display-graphic-p)
+  (xterm-mouse-mode 1))
 
 ;; ====================
 ;; Initialization Complete
