@@ -132,8 +132,10 @@
     "SPC e" "Editing"
     "SPC s" "Search"
     "SPC h" "Help"
-    "SPC g" "Version control"
+    "SPC g" "Go to/LSP"
     "SPC g v" "version control"
+    "SPC c" "Code"
+    "SPC l" "LSP"
     "SPC '" "Eshell"
     "SPC SPC" "M-X")
 
