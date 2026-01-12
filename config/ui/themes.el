@@ -10,14 +10,31 @@
 	(load-theme (intern full-theme-name) t)
       (message "Failed to load theme: %s" theme))))
 
-;; Load and configure 'all-the-icons' for graphical icons support
-(use-package all-the-icons
-  :straight t
-  :defer t
-  :if (display-graphic-p)
-  :config
-  (unless (member "all-the-icons" (font-family-list))
-    (all-the-icons-install-fonts t)))
+;; ====================
+;; GUI-specific configuration
+;; ====================
+
+(when (display-graphic-p)
+  ;; Load and configure 'all-the-icons' for graphical icons support
+  (use-package all-the-icons
+    :straight t
+    :defer t
+    :config
+    (unless (member "all-the-icons" (font-family-list))
+      (all-the-icons-install-fonts t)))
+
+  ;; Set frame title format to nil
+  (setq frame-title-format nil)
+
+  ;; Start Emacs maximized
+  (add-to-list 'initial-frame-alist '(fullscreen . maximized))
+
+  ;; Set the default font
+  (set-face-attribute 'default nil :font "JetBrains Mono 14"))
+
+;; ====================
+;; Common UI configuration (for both GUI and terminal)
+;; ====================
 
 ;; Load and configure 'dashboard' for a custom Emacs startup screen
 (use-package dashboard
@@ -53,8 +70,9 @@
   (doom-modeline-buffer-encoding nil)
   (doom-modeline-indent-info nil)
   :config
-  (unless (member "Symbols Nerd Font Mono" (font-family-list))
-    (nerd-icons-install-fonts t)))
+  (when (display-graphic-p)
+    (unless (member "Symbols Nerd Font Mono" (font-family-list))
+      (nerd-icons-install-fonts t))))
 
 ;; Load the configured theme
 (themes/load-theme emacs-theme)
@@ -66,16 +84,10 @@
   :config
   (winum-mode))
 
-;; Start Emacs maximized
-(add-to-list 'initial-frame-alist '(fullscreen . maximized))
-
 ;; Disable menu bar, tool bar, and scroll bar
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
-
-;; Set frame title format to nil
-(setq frame-title-format nil)
 
 ;; Do not show trailing whitespace by default
 (setq-default show-trailing-whitespace nil)
@@ -86,9 +98,6 @@
 ;; Enable global line numbers
 (global-display-line-numbers-mode 1)
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
-
-;; Set the default font to 'JetBrains Mono 14'
-(set-face-attribute 'default nil :font "JetBrains Mono 14")
 
 (use-package rainbow-delimiters
   :straight t

@@ -85,6 +85,16 @@ If CONDITION is non-nil, only load if CONDITION evaluates to true."
   (load-config-file "config/lang/verilog.el"))
 
 ;; ====================
+;; UI Modules (Theme and Dashboard for both GUI and terminal)
+;; ====================
+
+(use-package emacs
+  :ensure nil
+  :config
+  (load-config-file "config/ui/theme.el")
+  (load-config-file "config/ui/themes.el"))
+
+;; ====================
 ;; UI Modules (GUI only)
 ;; ====================
 
@@ -92,8 +102,6 @@ If CONDITION is non-nil, only load if CONDITION evaluates to true."
   :ensure nil
   :if (display-graphic-p)
   :config
-  (load-config-file "config/ui/theme.el")
-  (load-config-file "config/ui/themes.el")
   (load-config-file "config/ui/treemacs.el"))
 
 ;; ====================
