@@ -32,8 +32,8 @@
     "cD" '(lsp-bridge-diagnostic-list :which-key "diagnostic list")
     "cf" '(apheleia-format :which-key "format"))
 
-  ;; Go to (SPC g)
-  (emacs-leader
+  ;; Go to (g prefix - overrides evil)
+  (general-def
     :states 'normal
     :keymaps 'override
     "gd" '(lsp-bridge-find-def :which-key "go to definition")
