@@ -12,11 +12,14 @@
 (use-package ivy
   :straight t
   :diminish ivy-mode
+  :defer 1
   :init
   (setq ivy-use-virtual-buffers t
         ivy-count-format "(%d/%d) "
         enable-recursive-minibuffers t
-        ivy-initial-inputs-alist nil)
+        ivy-initial-inputs-alist nil
+        ivy-re-builders-alist
+        '((t . ivy--regex-ignore-order)))
   :config
   (ivy-mode 1))
 
@@ -105,9 +108,12 @@
 
 (use-package which-key
   :straight t
+  :defer 2
   :init
   (setq which-key-show-prefix 'SPC
-        which-key-idle-delay 0.5)
+        which-key-idle-delay 1.0
+        which-key-max-description-length 30
+        which-key-side-window-max-height 0.25)
   :config
   (which-key-mode))
 

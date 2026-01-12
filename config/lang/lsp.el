@@ -1,7 +1,8 @@
 ;; Load and configure 'yasnippet' for snippet support
 (use-package yasnippet
   :straight t
-  :defer t
+  :defer 3
+  :diminish yas-minor-mode
   :config
   (yas-global-mode))
 
@@ -11,7 +12,12 @@
 			:repo "manateelazycat/lsp-bridge"
 			:files ("*.el" "*.py" "acm" "core" "langserver"
 				"multiserver" "resources"))
-  :defer t)
+  :defer t
+  :init
+  (setq lsp-bridge-enable-log nil
+        lsp-bridge-enable-hover-diagnostic t
+        lsp-bridge-enable-signature-help t
+        lsp-bridge-completion-stop-when-inserting t))
 
 ;; Load and configure 'apheleia' for code formatting
 (use-package apheleia

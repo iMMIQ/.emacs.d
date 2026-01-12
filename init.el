@@ -6,6 +6,39 @@
 ;;; Code:
 
 ;; ====================
+;; Performance Optimization
+;; ====================
+
+;; Increase garbage collection threshold during startup for faster boot
+(setq gc-cons-threshold most-positive-fixnum
+      gc-cons-percentage 0.6)
+
+;; Reset GC after startup
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (setq gc-cons-threshold 16777216  ; 16MB
+                  gc-cons-percentage 0.1)))
+
+;; Increase file read limit for better LSP performance
+(setq read-process-output-max (* 1024 1024))  ; 1MB
+
+;; Reduce file name handlers overhead
+(defvar file-name-handler-alist-original file-name-handler-alist)
+(setq file-name-handler-alist nil)
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (setq file-name-handler-alist file-name-handler-alist-original)))
+
+;; Disable unnecessary features for performance
+(setq inhibit-compacting-font-caches t)
+
+;; Native compilation settings (Emacs 28+)
+(when (featurep 'native-compile)
+  (setq native-comp-deferred-compilation t
+        native-comp-async-report-warnings-errors nil
+        native-comp-jit-compilation t))
+
+;; ====================
 ;; Package Management
 ;; ====================
 
