@@ -11,7 +11,6 @@
 
 (use-package evil
   :straight t
-  :defer 1
   :init
   (setq evil-want-integration t
         evil-want-keybinding nil

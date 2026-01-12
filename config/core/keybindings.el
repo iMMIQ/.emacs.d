@@ -20,6 +20,11 @@
             (slot . -1)))))
     (eshell)))
 
+(defun kill-current-buffer ()
+  "Kill the current buffer."
+  (interactive)
+  (kill-this-buffer))
+
 ;; ====================
 ;; Global Keybindings
 ;; ====================
@@ -50,7 +55,7 @@
   ;; Buffers
   "bn" '(next-buffer :which-key "next-buffer")
   "bp" '(previous-buffer :which-key "previous-buffer")
-  "bd" '(kill-this-buffer :which-key "kill-this-buffer")
+  "bd" '(kill-current-buffer :which-key "kill-this-buffer")
   "bD" '(kill-buffer :which-key "kill-buffer")
   "bb" '(counsel-switch-buffer :which-key "switch-buffer")
   ;; Window Management
