@@ -4,15 +4,10 @@
 
 ;;; Code:
 
-(defun core-lib-provide-placeholder (feature)
-  "Provide FEATURE as a transitional placeholder."
-  (unless (featurep feature)
-    (provide feature)))
-
-(defun core-lib-provide-placeholders (features)
-  "Provide each feature in FEATURES as a transitional placeholder."
-  (dolist (feature features)
-    (core-lib-provide-placeholder feature)))
+(defun core-lib-require-feature (feature)
+  "Require FEATURE when available, else provide a placeholder."
+  (or (require feature nil t)
+      (provide feature)))
 
 (provide 'core-lib)
 ;;; lib.el ends here
