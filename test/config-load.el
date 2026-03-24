@@ -7,6 +7,12 @@
     (file-name-directory (or load-file-name buffer-file-name))))
   "Root directory for the startup skeleton smoke tests.")
 
+(defun config-smoke--read-file (path)
+  "Return the contents of PATH relative to the repo root."
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name path config-smoke--root-dir))
+    (buffer-string)))
+
 (defun config-smoke--ensure-init-loaded ()
   "Load the startup skeleton if it is not already loaded."
   (unless (featurep 'init)
@@ -550,6 +556,26 @@ PACKAGE names the optional package whose setup should be forced to fail."
 (ert-deftest config-smoke/init-loads ()
   (config-smoke--ensure-init-loaded)
   (should (featurep 'init)))
+
+(ert-deftest config-smoke/new-layout-is-active ()
+  (let ((legacy-config-dir
+         (directory-file-name
+          (expand-file-name "config" config-smoke--root-dir)))
+        (readme (config-smoke--read-file "README.md")))
+    (should (featurep 'init))
+    (should-not
+     (cl-some
+      (lambda (dir)
+        (and (stringp dir)
+             (file-equal-p (directory-file-name (expand-file-name dir))
+                           legacy-config-dir)))
+      load-path))
+    (should (string-match-p "^## Structure$" readme))
+    (should (string-match-p "`early-init\\.el`" readme))
+    (should (string-match-p "`init\\.el`" readme))
+    (should (string-match-p "`lisp/`" readme))
+    (should (string-match-p "`config/`" readme))
+    (should (string-match-p "legacy\\|inactive" readme))))
 
 (ert-deftest config-smoke/leader-functions-exist ()
   (config-smoke--ensure-init-loaded)

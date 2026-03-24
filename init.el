@@ -6,6 +6,8 @@
 
 (setq load-prefer-newer t)
 
+;; Active configuration lives under lisp/. The legacy config/ tree is
+;; kept in the repo as inactive reference material and is not loaded.
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 
 (require 'core-paths "core/paths")
