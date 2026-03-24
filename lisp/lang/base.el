@@ -44,9 +44,7 @@
 
 (use-package apheleia
   :straight t
-  :commands (apheleia-format)
-  :config
-  (apheleia-global-mode 1))
+  :commands (apheleia-format))
 
 (provide 'lang-base)
 ;;; base.el ends here

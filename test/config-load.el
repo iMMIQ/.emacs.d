@@ -38,6 +38,12 @@
   (should (featurep 'lang-rust))
   (should (featurep 'lang-verilog)))
 
+(ert-deftest config-smoke/language-base-does-not-enable-apheleia-globally ()
+  (config-smoke--ensure-init-loaded)
+  (require 'apheleia)
+  (should (boundp 'apheleia-global-mode))
+  (should-not apheleia-global-mode))
+
 (ert-deftest config-smoke/ui-theme-load-is-side-effect-free ()
   (let* ((default-directory config-smoke--root-dir)
          (theme-file
