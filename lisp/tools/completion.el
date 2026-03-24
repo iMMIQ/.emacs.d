@@ -4,6 +4,8 @@
 
 ;;; Code:
 
+(defvar straight-base-dir)
+
 (defconst tools-completion--config-root
   (or (let ((origin (or load-file-name
                         byte-compile-current-file
@@ -23,8 +25,10 @@
 
 (defun tools-completion--bootstrap-straight ()
   "Enable local straight/use-package integration when available."
-  (when (file-exists-p tools-completion--straight-bootstrap-file)
-    (load tools-completion--straight-bootstrap-file nil 'nomessage))
+  (let ((user-emacs-directory tools-completion--config-root))
+    (when (file-exists-p tools-completion--straight-bootstrap-file)
+      (setq straight-base-dir tools-completion--config-root)
+      (load tools-completion--straight-bootstrap-file nil 'nomessage)))
   (require 'use-package))
 
 (tools-completion--bootstrap-straight)
