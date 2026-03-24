@@ -96,17 +96,74 @@
               (should (eq size 'sentinel-size)))))
       (kill-buffer output-buffer))))
 
+(ert-deftest config-smoke/ui-theme-apply-is-idempotent ()
+  (let* ((default-directory config-smoke--root-dir)
+         (theme-file
+          (expand-file-name "lisp/ui/theme.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-ui-theme-idempotent*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (custom-enabled-themes '(wombat)))
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,theme-file nil 'nomessage)
+             (ui-theme-apply)
+             (ui-theme-apply)
+             (princ (prin1-to-string custom-enabled-themes)))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (should (equal (read (buffer-string))
+                           '(modus-operandi)))))
+      (kill-buffer output-buffer))))
+
+(ert-deftest config-smoke/bootstrap-ui-apply-is-tolerant ()
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-bootstrap-ui*"))
+         (form
+          `(let ((load-prefer-newer t))
+             (add-to-list 'load-path ,lisp-dir)
+             (require 'core-bootstrap "core/bootstrap")
+             (when (fboundp 'ui-theme-apply)
+               (fmakunbound 'ui-theme-apply))
+             (core-bootstrap-apply-top-level-feature 'ui-theme)
+             (princ "ok"))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (should (string-match-p "ok" (buffer-string)))))
+      (kill-buffer output-buffer))))
+
 (ert-deftest config-smoke/init-applies-ui-through-bootstrap ()
   (let* ((default-directory config-smoke--root-dir)
+         (init-file (expand-file-name "init.el" config-smoke--root-dir))
          (output-buffer (generate-new-buffer " *config-smoke-init-ui*"))
          (form
-          '(princ
-            (prin1-to-string
-             (list :startup inhibit-startup-screen
-                   :themes custom-enabled-themes
-                   :line line-number-mode
-                   :column column-number-mode
-                   :size size-indication-mode)))))
+          `(let ((user-emacs-directory ,config-smoke--root-dir))
+             (princ
+              (prin1-to-string
+               (list :startup inhibit-startup-screen
+                     :themes custom-enabled-themes
+                     :line line-number-mode
+                     :column column-number-mode
+                     :size size-indication-mode))))))
     (unwind-protect
         (let ((status (call-process "emacs"
                                     nil
@@ -115,7 +172,7 @@
                                     "--batch"
                                     "-Q"
                                     "-l"
-                                    "init.el"
+                                    init-file
                                     "--eval"
                                     (prin1-to-string form))))
           (should (equal status 0))

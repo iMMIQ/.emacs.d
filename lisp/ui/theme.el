@@ -17,6 +17,7 @@
   (ui-startup-apply)
   (ui-display-apply)
   (ui-modeline-apply)
+  (mapc #'disable-theme (copy-sequence custom-enabled-themes))
   (load-theme ui-theme-default t))
 
 (provide 'ui-theme)

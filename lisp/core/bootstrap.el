@@ -26,7 +26,8 @@
 
 (defun core-bootstrap-apply-top-level-feature (feature)
   "Apply explicit startup behavior for top-level FEATURE."
-  (when (eq feature 'ui-theme)
+  (when (and (eq feature 'ui-theme)
+             (fboundp 'ui-theme-apply))
     (ui-theme-apply)))
 
 (defun core-bootstrap-load-top-level-features ()
