@@ -4,9 +4,21 @@
 
 ;;; Code:
 
+(defconst tools-completion--config-root
+  (or (let ((origin (or load-file-name
+                        byte-compile-current-file
+                        buffer-file-name
+                        default-directory)))
+        (and origin
+             (locate-dominating-file
+              origin
+              "straight/repos/straight.el/bootstrap.el")))
+      user-emacs-directory)
+  "Root directory for this config checkout.")
+
 (defconst tools-completion--straight-bootstrap-file
   (expand-file-name "straight/repos/straight.el/bootstrap.el"
-                    user-emacs-directory)
+                    tools-completion--config-root)
   "Path to the local straight.el bootstrap file.")
 
 (defun tools-completion--bootstrap-straight ()
@@ -32,7 +44,20 @@
   :config
   (marginalia-mode 1))
 
-(recentf-mode 1)
+(use-package recentf
+  :ensure nil
+  :init
+  (setq recentf-auto-cleanup 'never)
+  :config
+  (recentf-mode 1))
+
+(use-package consult
+  :straight t
+  :commands (consult-buffer
+             consult-find
+             consult-line
+             consult-recent-file
+             consult-ripgrep))
 
 (require 'tools-actions "tools/actions")
 (require 'tools-search "tools/search")

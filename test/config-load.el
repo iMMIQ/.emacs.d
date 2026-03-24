@@ -37,6 +37,36 @@
   (should (fboundp 'consult-buffer))
   (should (fboundp 'embark-act)))
 
+(ert-deftest config-smoke/completion-loads-outside-user-emacs-directory ()
+  (let* ((fake-user-emacs-directory (make-temp-file "config-smoke-emacs-dir" t))
+         (default-directory config-smoke--root-dir)
+         (completion-file
+          (expand-file-name "lisp/tools/completion.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-completion*"))
+         (form
+          `(let ((user-emacs-directory ,fake-user-emacs-directory))
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,completion-file nil 'nomessage)
+             (princ (if (and (fboundp 'consult-buffer)
+                             (fboundp 'embark-act))
+                        "ok"
+                      "missing")))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (should (string-match-p "ok" (buffer-string)))))
+      (kill-buffer output-buffer)
+      (delete-directory fake-user-emacs-directory t))))
+
 (ert-deftest config-smoke/which-key-loads-from-repo-build ()
   (config-smoke--ensure-init-loaded)
   (let ((which-key-file (locate-library "which-key")))

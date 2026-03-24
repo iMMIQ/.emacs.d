@@ -6,10 +6,6 @@
 
 (require 'use-package)
 
-(use-package consult
-  :straight t
-  :commands (consult-buffer consult-find consult-recent-file))
-
 (use-package embark
   :straight t
   :commands (embark-act))

@@ -4,11 +4,7 @@
 
 ;;; Code:
 
-(require 'use-package)
-
-(use-package consult
-  :straight t
-  :commands (consult-line consult-ripgrep))
+(require 'consult)
 
 (provide 'tools-search)
 ;;; search.el ends here
