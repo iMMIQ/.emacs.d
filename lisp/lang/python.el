@@ -6,6 +6,9 @@
 
 (require 'lang-base "lang/base")
 
+(defvar pyimport-pyflakes-path)
+(defvar py-isort-options)
+
 (defun lang-python--lsp-server ()
   "Return the preferred Python LSP server executable name."
   (cond
@@ -40,6 +43,24 @@
 (with-eval-after-load 'apheleia-formatters
   (lang-python--configure-apheleia))
 
+(defun lang-python--configure-pyimport ()
+  "Enable pyimport support when pyflakes is available."
+  (let ((pyflakes-path (executable-find "pyflakes")))
+    (when pyflakes-path
+      (autoload 'pyimport-mode "pyimport" nil t)
+      (setq pyimport-pyflakes-path pyflakes-path)
+      (add-hook 'python-mode-hook #'pyimport-mode))))
+
+(defun lang-python--configure-py-isort ()
+  "Enable py-isort support when isort is available."
+  (when (executable-find "isort")
+    (autoload 'py-isort-before-save "py-isort" nil t)
+    (setq py-isort-options '("-l 120" "--profile=black"))
+    (add-hook 'before-save-hook #'py-isort-before-save)))
+
+(lang-python--configure-pyimport)
+(lang-python--configure-py-isort)
+
 (use-package python
   :init
   (setq python-shell-interpreter "python3"
@@ -47,6 +68,8 @@
         lsp-bridge-python-command "python3"
         lsp-bridge-python-lsp-server (lang-python--lsp-server))
   :mode ("\\.py\\'" . python-mode)
+  :mode ("[./]flake8\\'" . conf-mode)
+  :mode ("/Pipfile\\'" . conf-mode)
   :hook (python-mode . lsp-bridge-mode))
 
 (provide 'lang-python)

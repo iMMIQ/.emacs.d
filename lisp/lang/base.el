@@ -4,6 +4,8 @@
 
 ;;; Code:
 
+(defvar straight-base-dir)
+
 (defconst lang-base--config-root
   (or (let ((origin (or load-file-name
                         byte-compile-current-file
@@ -23,8 +25,10 @@
 
 (defun lang-base--bootstrap-straight ()
   "Enable local straight/use-package integration when available."
-  (when (file-exists-p lang-base--straight-bootstrap-file)
-    (load lang-base--straight-bootstrap-file nil 'nomessage))
+  (let ((user-emacs-directory lang-base--config-root))
+    (when (file-exists-p lang-base--straight-bootstrap-file)
+      (setq straight-base-dir lang-base--config-root)
+      (load lang-base--straight-bootstrap-file nil 'nomessage)))
   (require 'use-package))
 
 (lang-base--bootstrap-straight)

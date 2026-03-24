@@ -77,6 +77,47 @@
   (should lsp-bridge-enable-signature-help)
   (should lsp-bridge-completion-stop-when-inserting))
 
+(ert-deftest config-smoke/language-base-loads-outside-user-emacs-directory ()
+  (let* ((fake-user-emacs-directory (make-temp-file "config-smoke-lang-dir" t))
+         (default-directory config-smoke--root-dir)
+         (base-file
+          (expand-file-name "lisp/lang/base.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (script-file (make-temp-file "config-smoke-lang-base" nil ".el"))
+         (output-buffer (generate-new-buffer " *config-smoke-lang-base*"))
+         (form
+          `(let ((user-emacs-directory ,fake-user-emacs-directory))
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,base-file nil 'nomessage)
+             (princ
+              (prin1-to-string
+               (list :feature (featurep 'lang-base)
+                     :straight (and (boundp 'straight-base-dir)
+                                    straight-base-dir)))))))
+    (with-temp-file script-file
+      (insert (prin1-to-string form)))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "-l"
+                                    script-file)))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (pcase-let ((`(:feature ,feature
+                           :straight ,straight-base-dir)
+                         (read (buffer-string))))
+              (should feature)
+              (should (boundp 'straight-base-dir))
+              (should-not (file-equal-p straight-base-dir
+                                        fake-user-emacs-directory)))))
+      (kill-buffer output-buffer)
+      (delete-file script-file)
+      (delete-directory fake-user-emacs-directory t))))
+
 (ert-deftest config-smoke/python-language-module-carries-over-lsp-and-formatting ()
   (config-smoke--ensure-init-loaded)
   (require 'apheleia)
@@ -87,6 +128,8 @@
   (should (equal python-shell-interpreter "python3"))
   (should-not python-indent-guess-indent-offset-verbose)
   (should (equal lsp-bridge-python-command "python3"))
+  (should (member '("[./]flake8\\'" . conf-mode) auto-mode-alist))
+  (should (member '("/Pipfile\\'" . conf-mode) auto-mode-alist))
   (should (equal lsp-bridge-python-lsp-server
                  (config-smoke--expected-python-lsp-server)))
   (let ((formatter (config-smoke--expected-python-formatter)))
@@ -97,6 +140,74 @@
                      (car formatter)))
       (should (equal (alist-get (car formatter) apheleia-formatters)
                      (cdr formatter))))))
+
+(ert-deftest config-smoke/python-language-module-enables-optional-tools-when-available ()
+  (let* ((temp-dir (make-temp-file "config-smoke-python-tools" t))
+         (default-directory config-smoke--root-dir)
+         (python-file
+          (expand-file-name "lisp/lang/python.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (fake-bin (expand-file-name "bin" temp-dir))
+         (pyflakes (expand-file-name "pyflakes" fake-bin))
+         (isort (expand-file-name "isort" fake-bin))
+         (pyimport-el (expand-file-name "pyimport.el" temp-dir))
+         (py-isort-el (expand-file-name "py-isort.el" temp-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-python-tools*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (exec-path (cons ,fake-bin exec-path))
+                 (process-environment
+                  (cons (concat "PATH=" ,fake-bin path-separator
+                                (or (getenv "PATH") ""))
+                        process-environment)))
+             (add-to-list 'load-path ,temp-dir)
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,python-file nil 'nomessage)
+             (princ
+              (prin1-to-string
+               (list :pyimport (memq #'pyimport-mode python-mode-hook)
+                     :pyflakes (and (boundp 'pyimport-pyflakes-path)
+                                    pyimport-pyflakes-path)
+                     :isort (memq #'py-isort-before-save before-save-hook)
+                     :options (and (boundp 'py-isort-options)
+                                   py-isort-options)))))))
+    (make-directory fake-bin)
+    (with-temp-file pyflakes
+      (insert "#!/bin/sh\nexit 0\n"))
+    (set-file-modes pyflakes #o755)
+    (with-temp-file isort
+      (insert "#!/bin/sh\nexit 0\n"))
+    (set-file-modes isort #o755)
+    (with-temp-file pyimport-el
+      (insert "(defvar pyimport-pyflakes-path nil)\n"
+              "(defun pyimport-mode ())\n"
+              "(provide 'pyimport)\n"))
+    (with-temp-file py-isort-el
+      (insert "(defvar py-isort-options nil)\n"
+              "(defun py-isort-before-save ())\n"
+              "(provide 'py-isort)\n"))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (pcase-let ((`(:pyimport ,pyimport
+                           :pyflakes ,pyflakes-path
+                           :isort ,isort-hook
+                           :options ,options)
+                         (read (buffer-string))))
+              (should pyimport)
+              (should (equal pyflakes-path pyflakes))
+              (should isort-hook)
+              (should (equal options '("-l 120" "--profile=black"))))))
+      (kill-buffer output-buffer)
+      (delete-directory temp-dir t))))
 
 (ert-deftest config-smoke/rust-language-module-carries-over-rustic-settings ()
   (config-smoke--ensure-init-loaded)
