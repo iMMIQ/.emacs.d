@@ -27,6 +27,11 @@
                            core-bootstrap-top-level-features))
     (should (featurep feature))))
 
+(ert-deftest config-smoke/display-features-load ()
+  (config-smoke--ensure-init-loaded)
+  (should (featurep 'ui-display))
+  (should (featurep 'ui-theme)))
+
 (ert-deftest config-smoke/init-loads ()
   (config-smoke--ensure-init-loaded)
   (should (featurep 'init)))
