@@ -89,6 +89,12 @@
             (should (string-match-p "ok" (buffer-string)))))
       (kill-buffer output-buffer))))
 
+(ert-deftest config-smoke/git-and-code-bindings-exist ()
+  (config-smoke--ensure-init-loaded)
+  (should (fboundp 'magit-status))
+  (should (fboundp 'apheleia-format))
+  (should (fboundp 'lsp-bridge-code-action)))
+
 (ert-deftest config-smoke/completion-loads-outside-user-emacs-directory ()
   (let* ((fake-user-emacs-directory (make-temp-file "config-smoke-emacs-dir" t))
          (default-directory config-smoke--root-dir)

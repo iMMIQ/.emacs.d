@@ -9,6 +9,8 @@
 (require 'editor-buffers "editor/buffers")
 (require 'editor-editing "editor/editing")
 (require 'tools-project "tools/project")
+(require 'tools-git "tools/git")
+(require 'tools-code "tools/code")
 (require 'use-package)
 
 (use-package which-key
@@ -60,6 +62,14 @@
     "c" '(:ignore t :which-key "code")
     "cc" '(editor-editing-comment-line :which-key "comment line"))
   (emacs-leader
+    "gs" '(magit-status :which-key "status")
+    "ca" '(lsp-bridge-code-action :which-key "code action")
+    "cd" '(lsp-bridge-diagnostic-list :which-key "diagnostics")
+    "cf" '(apheleia-format :which-key "format")
+    "cl" '(lsp-bridge-restart-process :which-key "restart")
+    "cn" '(lsp-bridge-diagnostic-jump-next :which-key "next diagnostic")
+    "cp" '(lsp-bridge-diagnostic-jump-prev :which-key "previous diagnostic")
+    "cr" '(lsp-bridge-rename :which-key "rename")
     "pf" '(my/project-find-file :which-key "find file")
     "pp" '(my/project-switch :which-key "switch project")
     "ps" '(my/project-search :which-key "search project")))
