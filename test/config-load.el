@@ -31,6 +31,12 @@
   (should (fboundp 'emacs-leader))
   (should (fboundp 'emacs-local-leader)))
 
+(ert-deftest config-smoke/completion-commands-exist ()
+  (config-smoke--ensure-init-loaded)
+  (should (fboundp 'consult-find))
+  (should (fboundp 'consult-buffer))
+  (should (fboundp 'embark-act)))
+
 (ert-deftest config-smoke/which-key-loads-from-repo-build ()
   (config-smoke--ensure-init-loaded)
   (let ((which-key-file (locate-library "which-key")))
