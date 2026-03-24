@@ -16,5 +16,10 @@
   (interactive)
   (call-interactively #'project-switch-project))
 
+(defun my/project-search ()
+  "Search the current project."
+  (interactive)
+  (call-interactively #'consult-ripgrep))
+
 (provide 'tools-project)
 ;;; project.el ends here

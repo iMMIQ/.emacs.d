@@ -14,6 +14,11 @@
             nil
             'nomessage))))
 
+(defun config-smoke--leader-binding (state keys)
+  "Return the command bound to KEYS in STATE within the leader map."
+  (lookup-key general-override-mode-map
+              (vconcat (vector state) (kbd keys))))
+
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
   (dolist (feature (append '(core-paths
@@ -40,7 +45,17 @@
 (ert-deftest config-smoke/project-helpers-exist ()
   (config-smoke--ensure-init-loaded)
   (should (fboundp 'my/project-find-file))
-  (should (fboundp 'my/project-switch)))
+  (should (fboundp 'my/project-switch))
+  (should (fboundp 'my/project-search)))
+
+(ert-deftest config-smoke/project-leader-bindings-exist ()
+  (config-smoke--ensure-init-loaded)
+  (should (eq (config-smoke--leader-binding 'motion-state "SPC p f")
+              #'my/project-find-file))
+  (should (eq (config-smoke--leader-binding 'motion-state "SPC p p")
+              #'my/project-switch))
+  (should (eq (config-smoke--leader-binding 'motion-state "SPC p s")
+              #'my/project-search)))
 
 (ert-deftest config-smoke/completion-loads-outside-user-emacs-directory ()
   (let* ((fake-user-emacs-directory (make-temp-file "config-smoke-emacs-dir" t))

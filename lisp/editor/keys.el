@@ -60,9 +60,9 @@
     "c" '(:ignore t :which-key "code")
     "cc" '(editor-editing-comment-line :which-key "comment line"))
   (emacs-leader
-    "pf" #'my/project-find-file
-    "pp" #'my/project-switch
-    "ps" #'consult-ripgrep))
+    "pf" '(my/project-find-file :which-key "find file")
+    "pp" '(my/project-switch :which-key "switch project")
+    "ps" '(my/project-search :which-key "search project")))
 
 (provide 'editor-keys)
 ;;; keys.el ends here
