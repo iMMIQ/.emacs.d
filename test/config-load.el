@@ -83,6 +83,55 @@ PACKAGE names the optional package whose setup should be forced to fail."
       (kill-buffer output-buffer)
       )))
 
+(defun config-smoke--init-load-result-with-personal-failures ()
+  "Return the subprocess result for init when personal setup fails."
+  (let* ((default-directory config-smoke--root-dir)
+         (init-file (expand-file-name "init.el" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-init-personal*"))
+         (form
+          `(let ((user-emacs-directory ,config-smoke--root-dir)
+                 (load-prefer-newer t))
+             (require 'cl-lib)
+             (let ((real-eval (symbol-function 'eval)))
+               (cl-letf (((symbol-function 'eval)
+                          (lambda (form &optional lexical)
+                            (if (and (consp form)
+                                     (eq (car form) 'use-package)
+                                     (memq (cadr form) '(rime emms)))
+                                (signal 'error
+                                        (list (format "simulated setup failure for %s"
+                                                      (cadr form))))
+                              (funcall real-eval form lexical)))))
+                 (load ,init-file nil 'nomessage)))
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :init (featurep 'init)
+                     :chinese (featurep 'personal-chinese)
+                     :music (featurep 'personal-music)
+                     :theme (featurep 'ui-theme)))))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form)))
+              (output (with-current-buffer output-buffer
+                        (buffer-string)))
+              (result-start nil))
+          (setq result-start (string-match "RESULT " output))
+          (list :status status
+                :output output
+                :data (and result-start
+                           (read (substring output
+                                            (+ result-start
+                                               (length "RESULT ")))))))
+      (kill-buffer output-buffer)
+      )))
+
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
   (dolist (feature (append '(core-paths
@@ -114,6 +163,20 @@ PACKAGE names the optional package whose setup should be forced to fail."
     (pcase-let ((`(:feature ,feature)
                  (plist-get result :data)))
       (should feature))))
+
+(ert-deftest config-smoke/init-loads-when-personal-setup-fails ()
+  (let* ((result (config-smoke--init-load-result-with-personal-failures))
+         (status (plist-get result :status)))
+    (should (equal status 0))
+    (pcase-let ((`(:init ,init
+                   :chinese ,chinese
+                   :music ,music
+                   :theme ,theme)
+                 (plist-get result :data)))
+      (should init)
+      (should chinese)
+      (should music)
+      (should theme))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
