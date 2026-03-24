@@ -32,6 +32,12 @@
   (should (featurep 'ui-display))
   (should (featurep 'ui-theme)))
 
+(ert-deftest config-smoke/language-features-load ()
+  (config-smoke--ensure-init-loaded)
+  (should (featurep 'lang-python))
+  (should (featurep 'lang-rust))
+  (should (featurep 'lang-verilog)))
+
 (ert-deftest config-smoke/ui-theme-load-is-side-effect-free ()
   (let* ((default-directory config-smoke--root-dir)
          (theme-file
