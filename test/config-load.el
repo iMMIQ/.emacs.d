@@ -34,6 +34,7 @@
 
 (ert-deftest config-smoke/language-features-load ()
   (config-smoke--ensure-init-loaded)
+  (should (featurep 'lang-base))
   (should (featurep 'lang-python))
   (should (featurep 'lang-rust))
   (should (featurep 'lang-verilog)))
