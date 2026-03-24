@@ -26,6 +26,11 @@
   (config-smoke--ensure-init-loaded)
   (should (featurep 'init)))
 
+(ert-deftest config-smoke/leader-functions-exist ()
+  (config-smoke--ensure-init-loaded)
+  (should (fboundp 'emacs-leader))
+  (should (fboundp 'emacs-local-leader)))
+
 (ert-deftest config-smoke/loader-prefers-real-modules ()
   (config-smoke--ensure-init-loaded)
   (let* ((feature 'config-smoke-real-module)
