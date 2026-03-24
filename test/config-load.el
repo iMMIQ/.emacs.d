@@ -50,12 +50,44 @@
 
 (ert-deftest config-smoke/project-leader-bindings-exist ()
   (config-smoke--ensure-init-loaded)
-  (should (eq (config-smoke--leader-binding 'motion-state "SPC p f")
-              #'my/project-find-file))
-  (should (eq (config-smoke--leader-binding 'motion-state "SPC p p")
-              #'my/project-switch))
-  (should (eq (config-smoke--leader-binding 'motion-state "SPC p s")
-              #'my/project-search)))
+  (dolist (state '(normal-state visual-state motion-state))
+    (should (eq (config-smoke--leader-binding state "SPC p f")
+                #'my/project-find-file))
+    (should (eq (config-smoke--leader-binding state "SPC p p")
+                #'my/project-switch))
+    (should (eq (config-smoke--leader-binding state "SPC p s")
+                #'my/project-search))))
+
+(ert-deftest config-smoke/project-loads-with-search-dependency ()
+  (let* ((default-directory config-smoke--root-dir)
+         (project-file
+          (expand-file-name "lisp/tools/project.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (consult-dir
+          (expand-file-name "straight/build/consult" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-project*"))
+         (form
+          `(progn
+             (add-to-list 'load-path ,consult-dir)
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,project-file nil 'nomessage)
+             (princ (if (and (fboundp 'my/project-search)
+                             (fboundp 'consult-ripgrep))
+                        "ok"
+                      "missing")))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (should (string-match-p "ok" (buffer-string)))))
+      (kill-buffer output-buffer))))
 
 (ert-deftest config-smoke/completion-loads-outside-user-emacs-directory ()
   (let* ((fake-user-emacs-directory (make-temp-file "config-smoke-emacs-dir" t))

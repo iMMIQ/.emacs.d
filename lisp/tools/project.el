@@ -6,6 +6,25 @@
 
 (require 'project)
 
+(defconst tools-project--config-root
+  (or (let ((origin (or load-file-name
+                        byte-compile-current-file
+                        buffer-file-name
+                        default-directory)))
+        (and origin
+             (locate-dominating-file
+              origin
+              "straight/repos/straight.el/bootstrap.el")))
+      user-emacs-directory)
+  "Root directory for this config checkout.")
+
+(let ((consult-build-dir
+       (expand-file-name "straight/build/consult" tools-project--config-root)))
+  (when (file-directory-p consult-build-dir)
+    (add-to-list 'load-path consult-build-dir)))
+
+(autoload 'consult-ripgrep "consult" nil t)
+
 (defun my/project-find-file ()
   "Find a file in the current project."
   (interactive)
