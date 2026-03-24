@@ -96,6 +96,38 @@
               (should (eq size 'sentinel-size)))))
       (kill-buffer output-buffer))))
 
+(ert-deftest config-smoke/init-applies-ui-through-bootstrap ()
+  (let* ((default-directory config-smoke--root-dir)
+         (output-buffer (generate-new-buffer " *config-smoke-init-ui*"))
+         (form
+          '(princ
+            (prin1-to-string
+             (list :startup inhibit-startup-screen
+                   :themes custom-enabled-themes
+                   :line line-number-mode
+                   :column column-number-mode
+                   :size size-indication-mode)))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "-l"
+                                    "init.el"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string)))
+              (should (string-match-p "(:startup t\\_>" output))
+              (should (string-match-p ":themes (modus-operandi)" output))
+              (should (string-match-p ":line t\\_>" output))
+              (should (string-match-p ":column t\\_>" output))
+              (should (string-match-p ":size t\\_>" output)))))
+      (kill-buffer output-buffer))))
+
 (ert-deftest config-smoke/init-loads ()
   (config-smoke--ensure-init-loaded)
   (should (featurep 'init)))

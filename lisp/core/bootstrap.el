@@ -24,10 +24,16 @@
   "Return the layered file path mapped for FEATURE, or nil."
   (alist-get feature core-bootstrap-feature-paths))
 
+(defun core-bootstrap-apply-top-level-feature (feature)
+  "Apply explicit startup behavior for top-level FEATURE."
+  (when (eq feature 'ui-theme)
+    (ui-theme-apply)))
+
 (defun core-bootstrap-load-top-level-features ()
   "Load top-level modules, tolerating modules not implemented yet."
   (dolist (feature core-bootstrap-top-level-features)
-    (core-lib-require-feature feature (core-bootstrap-feature-path feature))))
+    (core-lib-require-feature feature (core-bootstrap-feature-path feature))
+    (core-bootstrap-apply-top-level-feature feature)))
 
 (provide 'core-bootstrap)
 ;;; bootstrap.el ends here
