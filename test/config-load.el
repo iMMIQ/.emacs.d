@@ -1,9 +1,6 @@
 (require 'ert)
 
-(ert-deftest config-smoke/init-loads ()
-  (should (featurep 'init)))
-
-(ert-deftest config-smoke/loader-features-load ()
+(ert-deftest config-smoke/startup-skeleton-loads ()
   (dolist (feature '(core-paths
                      core-bootstrap
                      core-performance
@@ -12,3 +9,6 @@
                      ui-theme
                      tools-completion))
     (should (featurep feature))))
+
+(ert-deftest config-smoke/init-loads ()
+  (should (featurep 'init)))
