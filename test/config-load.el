@@ -48,6 +48,10 @@
                            core-bootstrap-top-level-features))
     (should (featurep feature))))
 
+(ert-deftest config-smoke/personal-modules-do-not-break-load ()
+  (config-smoke--ensure-init-loaded)
+  (should (featurep 'init)))
+
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
   (should (featurep 'ui-display))

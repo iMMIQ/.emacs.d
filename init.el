@@ -14,5 +14,13 @@
 
 (core-bootstrap-load-top-level-features)
 
+(condition-case err
+    (require 'personal-chinese "personal/chinese")
+  (error (message "Skipping chinese module: %s" err)))
+
+(condition-case err
+    (require 'personal-music "personal/music")
+  (error (message "Skipping music module: %s" err)))
+
 (provide 'init)
 ;;; init.el ends here
