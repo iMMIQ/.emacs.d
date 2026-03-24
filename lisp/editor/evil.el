@@ -14,7 +14,7 @@
     (when (file-directory-p dir)
       (add-to-list 'load-path dir))))
 
-(dolist (package '("goto-chg" "evil" "general"))
+(dolist (package '("goto-chg" "evil" "general" "which-key"))
   ;; Task 2 only needs already-built editor packages to be loadable.
   (editor-evil--add-package-to-load-path package))
 

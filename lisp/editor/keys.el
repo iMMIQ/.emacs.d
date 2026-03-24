@@ -34,7 +34,10 @@
     :states '(normal visual motion)
     :keymaps 'override
     :prefix "SPC m")
-  (emacs-leader
+  (general-def
+    :states '(normal visual motion)
+    :keymaps 'override
+    :prefix "SPC"
     "f" '(:ignore t :which-key "file")
     "ff" '(find-file :which-key "find file")
     "fs" '(save-buffer :which-key "save buffer")

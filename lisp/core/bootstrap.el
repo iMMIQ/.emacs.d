@@ -13,10 +13,21 @@
     tools-completion)
   "Top-level module groups required during the skeleton phase.")
 
+(defconst core-bootstrap-feature-paths
+  '((editor-evil . "editor/evil")
+    (editor-keys . "editor/keys")
+    (ui-theme . "ui/theme")
+    (tools-completion . "tools/completion"))
+  "Explicit layered file paths for top-level bootstrap features.")
+
+(defun core-bootstrap-feature-path (feature)
+  "Return the layered file path mapped for FEATURE, or nil."
+  (alist-get feature core-bootstrap-feature-paths))
+
 (defun core-bootstrap-load-top-level-features ()
   "Load top-level modules, tolerating modules not implemented yet."
   (dolist (feature core-bootstrap-top-level-features)
-    (core-lib-require-feature feature)))
+    (core-lib-require-feature feature (core-bootstrap-feature-path feature))))
 
 (provide 'core-bootstrap)
 ;;; bootstrap.el ends here

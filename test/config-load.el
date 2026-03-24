@@ -31,6 +31,20 @@
   (should (fboundp 'emacs-leader))
   (should (fboundp 'emacs-local-leader)))
 
+(ert-deftest config-smoke/which-key-loads-from-repo-build ()
+  (config-smoke--ensure-init-loaded)
+  (let ((which-key-file (locate-library "which-key")))
+    (should which-key-file)
+    (should (string-match-p "/straight/build/which-key/" which-key-file))))
+
+(ert-deftest config-smoke/top-level-feature-mapping-is-explicit ()
+  (config-smoke--ensure-init-loaded)
+  (should (equal (core-bootstrap-feature-path 'editor-evil)
+                 "editor/evil"))
+  (should (equal (core-bootstrap-feature-path 'editor-keys)
+                 "editor/keys"))
+  (should-not (core-bootstrap-feature-path 'config-smoke-fake-module)))
+
 (ert-deftest config-smoke/loader-prefers-real-modules ()
   (config-smoke--ensure-init-loaded)
   (let* ((feature 'config-smoke-real-module)
