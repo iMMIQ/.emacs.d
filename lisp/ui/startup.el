@@ -4,7 +4,9 @@
 
 ;;; Code:
 
-(setq inhibit-startup-screen t)
+(defun ui-startup-apply ()
+  "Apply startup UI defaults."
+  (setq inhibit-startup-screen t))
 
 (provide 'ui-startup)
 ;;; startup.el ends here

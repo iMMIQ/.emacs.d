@@ -4,9 +4,11 @@
 
 ;;; Code:
 
-(line-number-mode 1)
-(column-number-mode 1)
-(size-indication-mode 1)
+(defun ui-modeline-apply ()
+  "Apply lightweight modeline defaults."
+  (line-number-mode 1)
+  (column-number-mode 1)
+  (size-indication-mode 1))
 
 (provide 'ui-modeline)
 ;;; modeline.el ends here

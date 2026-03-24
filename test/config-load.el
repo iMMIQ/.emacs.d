@@ -29,10 +29,72 @@
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
-  (should (featurep 'ui-startup))
   (should (featurep 'ui-display))
-  (should (featurep 'ui-modeline))
   (should (featurep 'ui-theme)))
+
+(ert-deftest config-smoke/ui-theme-load-is-side-effect-free ()
+  (let* ((default-directory config-smoke--root-dir)
+         (theme-file
+          (expand-file-name "lisp/ui/theme.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-ui-theme*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (inhibit-startup-screen 'sentinel-startup)
+                 (custom-enabled-themes nil)
+                 (menu-bar-mode 'sentinel-menu)
+                 (tool-bar-mode 'sentinel-tool)
+                 (scroll-bar-mode 'sentinel-scroll)
+                 (line-number-mode 'sentinel-line)
+                 (column-number-mode 'sentinel-column)
+                 (size-indication-mode 'sentinel-size))
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,theme-file nil 'nomessage)
+             (princ
+              (prin1-to-string
+               (list :theme (featurep 'ui-theme)
+                     :display (featurep 'ui-display)
+                     :startup inhibit-startup-screen
+                     :themes custom-enabled-themes
+                     :menu menu-bar-mode
+                     :tool tool-bar-mode
+                     :scroll scroll-bar-mode
+                     :line line-number-mode
+                     :column column-number-mode
+                     :size size-indication-mode))))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (pcase-let ((`(:theme ,theme
+                           :display ,display
+                           :startup ,startup
+                           :themes ,themes
+                           :menu ,menu
+                           :tool ,tool
+                           :scroll ,scroll
+                           :line ,line
+                           :column ,column
+                           :size ,size)
+                         (read (buffer-string))))
+              (should theme)
+              (should display)
+              (should (eq startup 'sentinel-startup))
+              (should (null themes))
+              (should (eq menu 'sentinel-menu))
+              (should (eq tool 'sentinel-tool))
+              (should (eq scroll 'sentinel-scroll))
+              (should (eq line 'sentinel-line))
+              (should (eq column 'sentinel-column))
+              (should (eq size 'sentinel-size)))))
+      (kill-buffer output-buffer))))
 
 (ert-deftest config-smoke/init-loads ()
   (config-smoke--ensure-init-loaded)

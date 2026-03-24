@@ -11,7 +11,13 @@
 (require 'ui-display "ui/display")
 (require 'ui-modeline "ui/modeline")
 
-(load-theme ui-theme-default t)
+(defun ui-theme-apply ()
+  "Apply the rebuilt UI shell defaults."
+  (interactive)
+  (ui-startup-apply)
+  (ui-display-apply)
+  (ui-modeline-apply)
+  (load-theme ui-theme-default t))
 
 (provide 'ui-theme)
 ;;; theme.el ends here
