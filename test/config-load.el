@@ -1,3 +1,4 @@
+(require 'cl-lib)
 (require 'ert)
 
 (defconst config-smoke--root-dir
@@ -18,6 +19,26 @@
   "Return the command bound to KEYS in STATE within the leader map."
   (lookup-key general-override-mode-map
               (vconcat (vector state) (kbd keys))))
+
+(defun config-smoke--expected-python-lsp-server ()
+  "Return the Python LSP server expected from the migrated config."
+  (cond
+   ((executable-find "pylsp") "pylsp")
+   ((executable-find "Microsoft.Python.LanguageServer")
+    "Microsoft.Python.LanguageServer")
+   (t "pyright")))
+
+(defun config-smoke--expected-python-formatter ()
+  "Return the expected Python formatter symbol and command, or nil."
+  (catch 'found
+    (dolist (formatter
+             '((black . ("black" "-S" "-l" "120" "-"))
+               (yapf . ("yapf" "--style"
+                        "{based_on_style: pep8, column_limit: 120}" "-"))
+               (autopep8 . ("autopep8" "--max-line-length" "120" "-"))))
+      (when (executable-find (symbol-name (car formatter)))
+        (throw 'found formatter)))
+    nil))
 
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
@@ -44,6 +65,82 @@
   (require 'apheleia)
   (should (boundp 'apheleia-global-mode))
   (should-not apheleia-global-mode))
+
+(ert-deftest config-smoke/language-base-applies-shared-lsp-bridge-defaults ()
+  (config-smoke--ensure-init-loaded)
+  (should (boundp 'lsp-bridge-enable-log))
+  (should (boundp 'lsp-bridge-enable-hover-diagnostic))
+  (should (boundp 'lsp-bridge-enable-signature-help))
+  (should (boundp 'lsp-bridge-completion-stop-when-inserting))
+  (should-not lsp-bridge-enable-log)
+  (should lsp-bridge-enable-hover-diagnostic)
+  (should lsp-bridge-enable-signature-help)
+  (should lsp-bridge-completion-stop-when-inserting))
+
+(ert-deftest config-smoke/python-language-module-carries-over-lsp-and-formatting ()
+  (config-smoke--ensure-init-loaded)
+  (require 'apheleia)
+  (should (boundp 'python-shell-interpreter))
+  (should (boundp 'python-indent-guess-indent-offset-verbose))
+  (should (boundp 'lsp-bridge-python-command))
+  (should (boundp 'lsp-bridge-python-lsp-server))
+  (should (equal python-shell-interpreter "python3"))
+  (should-not python-indent-guess-indent-offset-verbose)
+  (should (equal lsp-bridge-python-command "python3"))
+  (should (equal lsp-bridge-python-lsp-server
+                 (config-smoke--expected-python-lsp-server)))
+  (let ((formatter (config-smoke--expected-python-formatter)))
+    (when formatter
+      (should (equal (alist-get 'python-mode apheleia-mode-alist)
+                     (car formatter)))
+      (should (equal (alist-get 'python-ts-mode apheleia-mode-alist)
+                     (car formatter)))
+      (should (equal (alist-get (car formatter) apheleia-formatters)
+                     (cdr formatter))))))
+
+(ert-deftest config-smoke/rust-language-module-carries-over-rustic-settings ()
+  (config-smoke--ensure-init-loaded)
+  (require 'rustic)
+  (should (null rustic-lsp-client))
+  (should-not (memq #'rustic-setup-lsp rustic-mode-hook))
+  (should-not (memq #'flycheck-mode rustic-mode-hook))
+  (should-not (memq #'flymake-mode-off rustic-mode-hook))
+  (should (memq #'lsp-bridge-mode rustic-mode-hook))
+  (should rustic-indent-method-chain)
+  (should (null rustic-babel-format-src-block))
+  (should (null rustic-format-trigger)))
+
+(ert-deftest config-smoke/verilog-language-module-carries-over-formatting-and-lsp ()
+  (config-smoke--ensure-init-loaded)
+  (require 'apheleia)
+  (require 'verilog-mode)
+  (should (= verilog-indent-level 2))
+  (should (= verilog-indent-level-module 2))
+  (should (= verilog-indent-level-declaration 2))
+  (should (= verilog-indent-level-behavioral 2))
+  (should (= verilog-indent-level-directive 2))
+  (should (= verilog-case-indent 2))
+  (should-not verilog-auto-newline)
+  (should-not (memq #'lsp-bridge-mode verilog-mode-hook))
+  (let ((enabled nil)
+        (real-executable-find (symbol-function 'executable-find)))
+    (cl-letf (((symbol-function 'lsp-bridge-mode)
+               (lambda (&optional _arg)
+                 (setq enabled t)))
+              ((symbol-function 'executable-find)
+               (lambda (name)
+                 (unless (equal name "verible-verilog-ls")
+                   (funcall real-executable-find name)))))
+      (run-hooks 'verilog-mode-hook))
+    (should-not enabled))
+  (when (executable-find "verible-verilog-format")
+    (should (equal (alist-get 'verilog-mode apheleia-mode-alist)
+                   'verible-verilog-format))
+    (should (equal (alist-get 'verible-verilog-format apheleia-formatters)
+                   '("verible-verilog-format"
+                     "--indentation_spaces" "2"
+                     "--column_limit" "100"
+                     "-")))))
 
 (ert-deftest config-smoke/ui-theme-load-is-side-effect-free ()
   (let* ((default-directory config-smoke--root-dir)
