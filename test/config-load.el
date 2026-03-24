@@ -40,6 +40,49 @@
         (throw 'found formatter)))
     nil))
 
+(defun config-smoke--personal-module-load-result (module-file feature package)
+  "Return the subprocess load result for MODULE-FILE providing FEATURE.
+PACKAGE names the optional package whose setup should be forced to fail."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-personal-module*"))
+         (form
+          `(let ((load-prefer-newer t))
+             (defmacro use-package (name &rest _args)
+               (if (eq name ',package)
+                   (signal 'error
+                           (list (format "simulated setup failure for %s"
+                                         name)))
+                 nil))
+             (provide 'use-package)
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,module-file nil 'nomessage)
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :feature (featurep ',feature)))))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form)))
+              (output (with-current-buffer output-buffer
+                        (buffer-string)))
+              (result-start nil))
+          (setq result-start (string-match "RESULT " output))
+          (list :status status
+                :output output
+                :data (and result-start
+                           (read (substring output
+                                            (+ result-start
+                                               (length "RESULT ")))))))
+      (kill-buffer output-buffer)
+      )))
+
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
   (dolist (feature (append '(core-paths
@@ -48,9 +91,29 @@
                            core-bootstrap-top-level-features))
     (should (featurep feature))))
 
-(ert-deftest config-smoke/personal-modules-do-not-break-load ()
-  (config-smoke--ensure-init-loaded)
-  (should (featurep 'init)))
+(ert-deftest config-smoke/personal-chinese-module-loads-when-rime-setup-fails ()
+  (let* ((result
+         (config-smoke--personal-module-load-result
+           (expand-file-name "lisp/personal/chinese.el" config-smoke--root-dir)
+           'personal-chinese
+           'rime))
+         (status (plist-get result :status)))
+    (should (equal status 0))
+    (pcase-let ((`(:feature ,feature)
+                 (plist-get result :data)))
+      (should feature))))
+
+(ert-deftest config-smoke/personal-music-module-loads-when-emms-setup-fails ()
+  (let* ((result
+         (config-smoke--personal-module-load-result
+           (expand-file-name "lisp/personal/music.el" config-smoke--root-dir)
+           'personal-music
+           'emms))
+         (status (plist-get result :status)))
+    (should (equal status 0))
+    (pcase-let ((`(:feature ,feature)
+                 (plist-get result :data)))
+      (should feature))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)

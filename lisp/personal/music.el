@@ -5,9 +5,13 @@
 ;;; Code:
 
 (when (require 'use-package nil t)
-  (use-package emms
-    :straight t
-    :defer t))
+  (condition-case err
+      (eval
+       '(use-package emms
+          :straight t
+          :defer t))
+    (error
+     (message "Skipping emms personal setup: %s" err))))
 
 (provide 'personal-music)
 ;;; music.el ends here

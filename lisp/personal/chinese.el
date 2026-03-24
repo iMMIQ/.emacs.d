@@ -5,11 +5,15 @@
 ;;; Code:
 
 (when (require 'use-package nil t)
-  (use-package rime
-    :straight t
-    :defer t
-    :init
-    (setq default-input-method "rime")))
+  (condition-case err
+      (eval
+       '(use-package rime
+          :straight t
+          :defer t
+          :init
+          (setq default-input-method "rime")))
+    (error
+     (message "Skipping rime personal setup: %s" err))))
 
 (provide 'personal-chinese)
 ;;; chinese.el ends here
