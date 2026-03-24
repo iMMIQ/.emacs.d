@@ -13,6 +13,38 @@
     (insert-file-contents (expand-file-name path config-smoke--root-dir))
     (buffer-string)))
 
+(defun config-smoke--path-under-directory-p (path directory)
+  "Return non-nil when PATH resolves inside DIRECTORY."
+  (let* ((directory-root (file-name-as-directory
+                          (expand-file-name directory config-smoke--root-dir)))
+         (directory-name (directory-file-name directory-root))
+         (candidates
+          (delete-dups
+           (list (expand-file-name path)
+                 (expand-file-name path config-smoke--root-dir)))))
+    (cl-some
+     (lambda (candidate)
+       (or (string= candidate directory-name)
+           (string-prefix-p directory-root candidate)))
+     candidates)))
+
+(defun config-smoke--paths-under-directory (paths directory)
+  "Return every entry from PATHS that resolves inside DIRECTORY."
+  (cl-remove-if-not
+   (lambda (path)
+     (and (stringp path)
+          (config-smoke--path-under-directory-p path directory)))
+   paths))
+
+(defun config-smoke--loaded-files-under-directory (directory)
+  "Return loaded files recorded in `load-history' under DIRECTORY."
+  (let (files)
+    (dolist (entry load-history (nreverse files))
+      (let ((file (car entry)))
+        (when (and (stringp file)
+                   (config-smoke--path-under-directory-p file directory))
+          (push file files))))))
+
 (defun config-smoke--ensure-init-loaded ()
   "Load the startup skeleton if it is not already loaded."
   (unless (featurep 'init)
@@ -558,18 +590,16 @@ PACKAGE names the optional package whose setup should be forced to fail."
   (should (featurep 'init)))
 
 (ert-deftest config-smoke/new-layout-is-active ()
-  (let ((legacy-config-dir
-         (directory-file-name
-          (expand-file-name "config" config-smoke--root-dir)))
-        (readme (config-smoke--read-file "README.md")))
+  (config-smoke--ensure-init-loaded)
+  (let* ((legacy-config-dir (expand-file-name "config" config-smoke--root-dir))
+         (legacy-load-path
+          (config-smoke--paths-under-directory load-path legacy-config-dir))
+         (legacy-loaded-files
+          (config-smoke--loaded-files-under-directory legacy-config-dir))
+         (readme (config-smoke--read-file "README.md")))
     (should (featurep 'init))
-    (should-not
-     (cl-some
-      (lambda (dir)
-        (and (stringp dir)
-             (file-equal-p (directory-file-name (expand-file-name dir))
-                           legacy-config-dir)))
-      load-path))
+    (should-not legacy-load-path)
+    (should-not legacy-loaded-files)
     (should (string-match-p "^## Structure$" readme))
     (should (string-match-p "`early-init\\.el`" readme))
     (should (string-match-p "`init\\.el`" readme))
