@@ -35,6 +35,7 @@
 
 (use-package diff-hl
   :straight t
+  :hook (magit-post-refresh . diff-hl-magit-post-refresh)
   :config
   (global-diff-hl-mode 1))
 
