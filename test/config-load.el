@@ -154,36 +154,47 @@
 (ert-deftest config-smoke/init-applies-ui-through-bootstrap ()
   (let* ((default-directory config-smoke--root-dir)
          (init-file (expand-file-name "init.el" config-smoke--root-dir))
+         (child-dir (make-temp-file "config-smoke-init-ui-cwd" t))
+         (child-home (make-temp-file "config-smoke-init-ui-home" t))
          (output-buffer (generate-new-buffer " *config-smoke-init-ui*"))
+         (setup-form
+          `(setq user-emacs-directory ,config-smoke--root-dir))
          (form
-          `(let ((user-emacs-directory ,config-smoke--root-dir))
-             (princ
-              (prin1-to-string
-               (list :startup inhibit-startup-screen
-                     :themes custom-enabled-themes
-                     :line line-number-mode
-                     :column column-number-mode
-                     :size size-indication-mode))))))
+          '(princ
+            (prin1-to-string
+             (list :startup inhibit-startup-screen
+                   :themes custom-enabled-themes
+                   :line line-number-mode
+                   :column column-number-mode
+                   :size size-indication-mode)))))
     (unwind-protect
-        (let ((status (call-process "emacs"
-                                    nil
-                                    output-buffer
-                                    nil
-                                    "--batch"
-                                    "-Q"
-                                    "-l"
-                                    init-file
-                                    "--eval"
-                                    (prin1-to-string form))))
-          (should (equal status 0))
-          (with-current-buffer output-buffer
-            (let ((output (buffer-string)))
-              (should (string-match-p "(:startup t\\_>" output))
-              (should (string-match-p ":themes (modus-operandi)" output))
-              (should (string-match-p ":line t\\_>" output))
-              (should (string-match-p ":column t\\_>" output))
-              (should (string-match-p ":size t\\_>" output)))))
-      (kill-buffer output-buffer))))
+        (let ((default-directory child-dir)
+              (process-environment
+               (append (list (concat "HOME=" child-home))
+                       process-environment)))
+          (let ((status (call-process "emacs"
+                                      nil
+                                      output-buffer
+                                      nil
+                                      "--batch"
+                                      "-Q"
+                                      "--eval"
+                                      (prin1-to-string setup-form)
+                                      "-l"
+                                      init-file
+                                      "--eval"
+                                      (prin1-to-string form))))
+            (should (equal status 0))
+            (with-current-buffer output-buffer
+              (let ((output (buffer-string)))
+                (should (string-match-p "(:startup t\\_>" output))
+                (should (string-match-p ":themes (modus-operandi)" output))
+                (should (string-match-p ":line t\\_>" output))
+                (should (string-match-p ":column t\\_>" output))
+                (should (string-match-p ":size t\\_>" output))))))
+      (kill-buffer output-buffer)
+      (delete-directory child-dir t)
+      (delete-directory child-home t))))
 
 (ert-deftest config-smoke/init-loads ()
   (config-smoke--ensure-init-loaded)
