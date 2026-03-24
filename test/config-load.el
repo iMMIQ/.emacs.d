@@ -37,6 +37,11 @@
   (should (fboundp 'consult-buffer))
   (should (fboundp 'embark-act)))
 
+(ert-deftest config-smoke/project-helpers-exist ()
+  (config-smoke--ensure-init-loaded)
+  (should (fboundp 'my/project-find-file))
+  (should (fboundp 'my/project-switch)))
+
 (ert-deftest config-smoke/completion-loads-outside-user-emacs-directory ()
   (let* ((fake-user-emacs-directory (make-temp-file "config-smoke-emacs-dir" t))
          (default-directory config-smoke--root-dir)

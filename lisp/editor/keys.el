@@ -8,6 +8,7 @@
 (require 'editor-windows "editor/windows")
 (require 'editor-buffers "editor/buffers")
 (require 'editor-editing "editor/editing")
+(require 'tools-project "tools/project")
 (require 'use-package)
 
 (use-package which-key
@@ -57,7 +58,11 @@
     "wd" '(editor-windows-delete-window :which-key "delete window")
     "wD" '(editor-windows-delete-other-windows :which-key "delete other windows")
     "c" '(:ignore t :which-key "code")
-    "cc" '(editor-editing-comment-line :which-key "comment line")))
+    "cc" '(editor-editing-comment-line :which-key "comment line"))
+  (emacs-leader
+    "pf" #'my/project-find-file
+    "pp" #'my/project-switch
+    "ps" #'consult-ripgrep))
 
 (provide 'editor-keys)
 ;;; keys.el ends here
