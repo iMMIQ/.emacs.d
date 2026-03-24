@@ -4,9 +4,15 @@
 
 ;;; Code:
 
-(use-package treemacs
-  :straight t
-  :commands (treemacs treemacs-select-window))
+(require 'use-package)
+
+(eval
+ (if (featurep 'straight)
+     '(use-package treemacs
+        :straight t
+        :commands (treemacs treemacs-select-window))
+   '(use-package treemacs
+      :commands (treemacs treemacs-select-window))))
 
 (provide 'tools-tree)
 ;;; tree.el ends here

@@ -29,7 +29,9 @@
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
+  (should (featurep 'ui-startup))
   (should (featurep 'ui-display))
+  (should (featurep 'ui-modeline))
   (should (featurep 'ui-theme)))
 
 (ert-deftest config-smoke/init-loads ()
