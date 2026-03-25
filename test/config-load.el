@@ -272,8 +272,18 @@ PACKAGE names the optional package whose setup should be forced to fail."
   (config-smoke--ensure-init-loaded)
   (should (equal frame-title-format nil))
   (should (< (abs (- line-spacing 0.16)) 0.0001))
+  (should (equal (default-value 'line-spacing) 0.16))
   (should (memq #'display-line-numbers-mode prog-mode-hook))
   (should-not (bound-and-true-p global-display-line-numbers-mode)))
+
+(ert-deftest config-smoke/display-gui-defaults-add-subtle-padding ()
+  (let ((default-frame-alist nil)
+        (internal-border-width 0))
+    (cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _frame) t))
+              ((symbol-function 'font-family-list) (lambda () nil)))
+      (ui-display-apply))
+    (should (equal internal-border-width 12))
+    (should (equal (alist-get 'internal-border-width default-frame-alist) 12))))
 
 (ert-deftest config-smoke/language-features-load ()
   (config-smoke--ensure-init-loaded)
@@ -548,10 +558,20 @@ PACKAGE names the optional package whose setup should be forced to fail."
          (form
           `(let ((load-prefer-newer t)
                  (custom-enabled-themes '(wombat)))
+             (require 'cl-lib)
              (add-to-list 'load-path ,lisp-dir)
              (load ,theme-file nil 'nomessage)
-             (ui-theme-apply)
-             (ui-theme-apply)
+             (let ((real-require (symbol-function 'require)))
+               (cl-letf (((symbol-function 'require)
+                          (lambda (feature &optional filename noerror)
+                            (if (eq feature 'doom-themes)
+                                'doom-themes
+                              (funcall real-require feature filename noerror))))
+                         ((symbol-function 'load-theme)
+                          (lambda (theme &optional _no-confirm _no-enable)
+                            (setq custom-enabled-themes (list theme)))))
+                 (ui-theme-apply)
+                 (ui-theme-apply)))
              (princ (prin1-to-string custom-enabled-themes)))))
     (unwind-protect
         (let ((status (call-process "emacs"
@@ -565,7 +585,7 @@ PACKAGE names the optional package whose setup should be forced to fail."
           (should (equal status 0))
           (with-current-buffer output-buffer
             (should (equal (read (buffer-string))
-                           '(modus-operandi)))))
+                           '(doom-one)))))
       (kill-buffer output-buffer))))
 
 (ert-deftest config-smoke/bootstrap-ui-apply-is-tolerant ()
@@ -601,7 +621,17 @@ PACKAGE names the optional package whose setup should be forced to fail."
          (child-home (make-temp-file "config-smoke-init-ui-home" t))
          (output-buffer (generate-new-buffer " *config-smoke-init-ui*"))
          (setup-form
-          `(setq user-emacs-directory ,config-smoke--root-dir))
+          `(progn
+             (setq user-emacs-directory ,config-smoke--root-dir)
+             (defalias 'config-smoke--real-require (symbol-function 'require))
+             (defun config-smoke--require-doom-themes (feature &optional filename noerror)
+               (if (eq feature 'doom-themes)
+                   'doom-themes
+                 (funcall 'config-smoke--real-require feature filename noerror)))
+             (fset 'require #'config-smoke--require-doom-themes)
+             (defun config-smoke--load-theme (theme &optional _no-confirm _no-enable)
+               (setq custom-enabled-themes (list theme)))
+             (fset 'load-theme #'config-smoke--load-theme)))
          (form
           '(princ
             (prin1-to-string
@@ -631,7 +661,7 @@ PACKAGE names the optional package whose setup should be forced to fail."
             (with-current-buffer output-buffer
               (let ((output (buffer-string)))
                 (should (string-match-p "(:startup t\\_>" output))
-                (should (string-match-p ":themes (modus-operandi)" output))
+                (should (string-match-p ":themes (doom-one)" output))
                 (should (string-match-p ":line t\\_>" output))
                 (should (string-match-p ":column t\\_>" output))
                 (should (string-match-p ":size t\\_>" output))))))
