@@ -210,7 +210,6 @@ PACKAGE names the optional package whose setup should be forced to fail."
   "Return the subprocess load result for the lazy tree entrypoint."
   (let* ((default-directory config-smoke--root-dir)
          (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
-         (tree-file (expand-file-name "lisp/tools/tree.el" config-smoke--root-dir))
          (output-buffer (generate-new-buffer " *config-smoke-tree-entrypoint*"))
          (form
           `(let ((load-prefer-newer t)
@@ -221,14 +220,16 @@ PACKAGE names the optional package whose setup should be forced to fail."
              (defun treemacs () (setq entrypoint-ran t))
              (provide 'treemacs)
              (add-to-list 'load-path ,lisp-dir)
-             (load ,tree-file nil 'nomessage)
-             (when (fboundp 'tools-tree-toggle)
-               (tools-tree-toggle))
-             (princ "RESULT ")
-             (princ
-              (prin1-to-string
-               (list :feature (featurep 'tools-tree)
-                     :entrypoint entrypoint-ran))))))
+             (autoload 'tools-tree-toggle "tools/tree" nil t)
+             (let ((feature-before (featurep 'tools-tree)))
+               (when (fboundp 'tools-tree-toggle)
+                 (tools-tree-toggle))
+               (princ "RESULT ")
+               (princ
+                (prin1-to-string
+                 (list :feature-before feature-before
+                       :feature (featurep 'tools-tree)
+                       :entrypoint entrypoint-ran)))))))
     (unwind-protect
         (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
                                     "--eval" (prin1-to-string form))))
@@ -237,18 +238,11 @@ PACKAGE names the optional package whose setup should be forced to fail."
                   (result-start nil))
               (setq result-start (string-match "RESULT " output))
               (list :status status
-                    :feature (and result-start
-                                  (plist-get
-                                   (read (substring output
-                                                    (+ result-start
-                                                       (length "RESULT "))))
-                                   :feature))
-                    :entrypoint (and result-start
-                                     (plist-get
-                                      (read (substring output
-                                                       (+ result-start
-                                                          (length "RESULT "))))
-                                      :entrypoint))))))
+                    :output output
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
 (defun config-smoke--ui-module-load-result
@@ -1145,8 +1139,13 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
 (ert-deftest config-smoke/tree-entrypoint-loads-module-on-demand ()
   (let ((result (config-smoke--tree-entrypoint-load-result)))
     (should (equal (plist-get result :status) 0))
-    (should (plist-get result :feature))
-    (should (plist-get result :entrypoint))))
+    (pcase-let ((`(:feature-before ,feature-before
+                   :feature ,feature
+                   :entrypoint ,entrypoint)
+                 (plist-get result :data)))
+      (should-not feature-before)
+      (should feature)
+      (should entrypoint))))
 
 (ert-deftest config-smoke/tree-entrypoint-is-bound-after-init ()
   (config-smoke--ensure-init-loaded)
