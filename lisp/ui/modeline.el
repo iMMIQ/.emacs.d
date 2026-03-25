@@ -21,14 +21,18 @@
   (when (condition-case nil
             (require 'doom-modeline nil t)
           (error nil))
-    (setq doom-modeline-height 24
-          doom-modeline-bar-width 3
-          doom-modeline-buffer-file-name-style 'truncate-upto-project
-          doom-modeline-minor-modes nil
-          doom-modeline-buffer-encoding nil
-          doom-modeline-indent-info nil
-          doom-modeline-icon (ui-modeline--icon-capable-p))
-    (doom-modeline-mode 1))
+    (condition-case nil
+        (progn
+          (setq doom-modeline-height 24
+                doom-modeline-bar-width 3
+                doom-modeline-buffer-file-name-style 'truncate-upto-project
+                doom-modeline-minor-modes nil
+                doom-modeline-buffer-encoding nil
+                doom-modeline-indent-info nil
+                doom-modeline-icon (ui-modeline--icon-capable-p))
+          (doom-modeline-mode 1))
+      (error
+       (setq doom-modeline-icon nil))))
   (unless (ui-modeline--icon-capable-p)
     (setq doom-modeline-icon nil)))
 

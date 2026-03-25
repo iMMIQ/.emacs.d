@@ -309,6 +309,7 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
                    dashboard-set-file-icons t
                    dashboard-items nil
                    dashboard-setup-startup-hook-count 0
+                   doom-modeline-mode-call-count 0
                    ui-startup--dashboard-hook-installed nil)
              (defun ui-icon-capable-p () ,icon-capable-form)
              ,@(mapcar #'cdr stub-features)
@@ -338,7 +339,9 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
                      :dashboard-set-heading-icons dashboard-set-heading-icons
                      :dashboard-set-file-icons dashboard-set-file-icons
                      :dashboard-items dashboard-items
-                     :dashboard-hook-count dashboard-setup-startup-hook-count))))))
+                     :dashboard-hook-count dashboard-setup-startup-hook-count
+                     :dashboard-hook-installed ui-startup--dashboard-hook-installed
+                     :doom-modeline-mode-call-count doom-modeline-mode-call-count))))))
     (unwind-protect
         (let ((status (call-process "emacs"
                                     nil
@@ -474,6 +477,31 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
       (should (plist-get data :feature))
       (should-not (plist-get data :doom-modeline-icon)))))
 
+(ert-deftest config-smoke/modeline-stays-safe-when-doom-modeline-mode-errors ()
+  (let* ((stubs
+          '((doom-modeline
+             .
+             (progn
+               (defun doom-modeline-mode (&optional _arg)
+                 (setq doom-modeline-mode-call-count
+                       (1+ doom-modeline-mode-call-count))
+                 (error "mode activation failed"))
+               (provide 'doom-modeline)))))
+         (result (config-smoke--ui-module-load-result-with-stubs
+                  "lisp/ui/modeline.el"
+                  'ui-modeline
+                  'ui-modeline-apply
+                  stubs
+                  nil)))
+    (should (equal (plist-get result :status) 0))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :line-number))
+      (should (plist-get data :column-number))
+      (should (plist-get data :size-indication))
+      (should (equal (plist-get data :doom-modeline-mode-call-count) 1))
+      (should-not (plist-get data :doom-modeline-icon)))))
+
 (ert-deftest config-smoke/startup-setup-stays-safe-without-dashboard ()
   (let ((result (config-smoke--ui-module-load-result
                  "lisp/ui/startup.el"
@@ -539,6 +567,31 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
       (should-not (plist-get data :dashboard-set-heading-icons))
       (should-not (plist-get data :dashboard-set-file-icons))
       (should (equal (plist-get data :dashboard-hook-count) 1)))))
+
+(ert-deftest config-smoke/startup-stays-safe-when-dashboard-hook-errors ()
+  (let* ((stubs
+          '((dashboard
+             .
+             (progn
+               (defun dashboard-setup-startup-hook ()
+                 (setq dashboard-setup-startup-hook-count
+                       (1+ dashboard-setup-startup-hook-count))
+                 (error "dashboard hook failed"))
+               (provide 'dashboard)))))
+         (result (config-smoke--ui-module-load-result-with-stubs
+                  "lisp/ui/startup.el"
+                  'ui-startup
+                  'ui-startup-apply
+                  stubs
+                  nil)))
+    (should (equal (plist-get result :status) 0))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :startup-screen))
+      (should (equal (plist-get data :dashboard-hook-count) 1))
+      (should-not (plist-get data :dashboard-hook-installed))
+      (should-not (plist-get data :dashboard-set-heading-icons))
+      (should-not (plist-get data :dashboard-set-file-icons)))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
