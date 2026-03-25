@@ -63,9 +63,9 @@ Responsibilities:
 
 Planned behavior:
 
-- Replace the current default `modus-operandi` with a One Dark family theme.
-- Prefer `doom-one` if available because it fits the requested visual direction and works well with a modern modeline and tree tooling.
-- If the package is unavailable, preserve startup by falling back to a safe built-in theme or leaving theme application unchanged.
+- Replace the current default `modus-operandi` with `doom-one` as the default theme.
+- Treat `doom-one` as the implementation of the requested One Dark direction for this project.
+- If `doom-one` is unavailable, preserve startup by falling back to a safe built-in theme or leaving theme application unchanged, but success for this work still means `doom-one` is the normal default in a fully provisioned setup.
 
 ### [`lisp/ui/display.el`](/home/ayd/.emacs.d/lisp/ui/display.el)
 
@@ -86,9 +86,12 @@ Planned behavior:
   - `JetBrains Mono`
   - `Iosevka Comfy`
   - `Sarasa Mono SC`
-- Increase `line-spacing` slightly for readability.
+- Use `JetBrains Mono` at 14pt when available, with the listed fonts as ordered fallbacks.
+- Set `line-spacing` to a small fixed value, targeting `0.16`, to improve readability without making the frame feel sparse.
 - Prefer side-by-side splits for wide frames, but avoid heavy or surprising window automation.
-- Enable useful global display defaults such as line numbers where already expected, while keeping non-code buffers visually quiet where appropriate.
+- Hide frame title noise by setting `frame-title-format` to `nil`.
+- Start GUI frames maximized through frame alists rather than ad hoc post-startup resizing.
+- Enable line numbers in programming buffers, but keep them off by default in non-programming buffers such as dashboard, treemacs, shell, and other utility views unless those modes already opt in.
 
 ### [`lisp/ui/modeline.el`](/home/ayd/.emacs.d/lisp/ui/modeline.el)
 
@@ -159,7 +162,7 @@ UI enhancements are optional dependencies, not boot-critical infrastructure.
 
 Expected package set:
 
-- One Dark theme package
+- `doom-themes` with `doom-one`
 - `doom-modeline`
 - `dashboard`
 - icon support packages only when needed by the selected modeline or dashboard configuration
@@ -245,7 +248,7 @@ Out of scope:
 
 This work is successful when:
 
-- Emacs starts with a One Dark appearance by default.
+- Emacs starts with `doom-one` as the default One Dark appearance.
 - The interface looks materially more modern and cohesive.
 - The modeline and startup page are upgraded without becoming noisy.
 - The active configuration stays modular and easy to maintain.
