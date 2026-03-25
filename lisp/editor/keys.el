@@ -13,6 +13,8 @@
 (require 'tools-code "tools/code")
 (require 'use-package)
 
+(autoload 'tools-tree-toggle "tools/tree" nil t)
+
 (use-package which-key
   :config
   (which-key-mode 1)
@@ -62,6 +64,7 @@
     "c" '(:ignore t :which-key "code")
     "cc" '(editor-editing-comment-line :which-key "comment line"))
   (emacs-leader
+    "e" '(tools-tree-toggle :which-key "explorer")
     "gs" '(magit-status :which-key "status")
     "ca" '(lsp-bridge-code-action :which-key "code action")
     "cd" '(lsp-bridge-diagnostic-list :which-key "diagnostics")

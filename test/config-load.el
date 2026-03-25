@@ -206,6 +206,51 @@ PACKAGE names the optional package whose setup should be forced to fail."
                                                    (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
+(defun config-smoke--tree-entrypoint-load-result ()
+  "Return the subprocess load result for the lazy tree entrypoint."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (tree-file (expand-file-name "lisp/tools/tree.el" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-tree-entrypoint*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (user-emacs-directory ,config-smoke--root-dir)
+                 (entrypoint-ran nil))
+             (defmacro use-package (_name &rest _args) nil)
+             (provide 'use-package)
+             (defun treemacs () (setq entrypoint-ran t))
+             (provide 'treemacs)
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,tree-file nil 'nomessage)
+             (when (fboundp 'tools-tree-toggle)
+               (tools-tree-toggle))
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :feature (featurep 'tools-tree)
+                     :entrypoint entrypoint-ran))))))
+    (unwind-protect
+        (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
+                                    "--eval" (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :feature (and result-start
+                                  (plist-get
+                                   (read (substring output
+                                                    (+ result-start
+                                                       (length "RESULT "))))
+                                   :feature))
+                    :entrypoint (and result-start
+                                     (plist-get
+                                      (read (substring output
+                                                       (+ result-start
+                                                          (length "RESULT "))))
+                                      :entrypoint))))))
+      (kill-buffer output-buffer))))
+
 (defun config-smoke--ui-module-load-result
     (module-path expected-feature apply-function missing-features)
   "Return the subprocess load result for a UI MODULE-PATH.
@@ -370,6 +415,11 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
                              core-performance)
                            core-bootstrap-top-level-features))
     (should (featurep feature))))
+
+(ert-deftest config-smoke/tree-module-stays-optional-at-startup ()
+  (config-smoke--ensure-init-loaded)
+  (should-not (featurep 'tools-tree))
+  (should-not (memq 'tools-tree core-bootstrap-top-level-features)))
 
 (ert-deftest config-smoke/personal-chinese-module-loads-when-rime-setup-fails ()
   (let* ((result
@@ -1091,6 +1141,17 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
                 #'my/project-switch))
     (should (eq (config-smoke--leader-binding state "SPC p s")
                 #'my/project-search))))
+
+(ert-deftest config-smoke/tree-entrypoint-loads-module-on-demand ()
+  (let ((result (config-smoke--tree-entrypoint-load-result)))
+    (should (equal (plist-get result :status) 0))
+    (should (plist-get result :feature))
+    (should (plist-get result :entrypoint))))
+
+(ert-deftest config-smoke/tree-entrypoint-is-bound-after-init ()
+  (config-smoke--ensure-init-loaded)
+  (should (eq (config-smoke--leader-binding 'normal-state "SPC e")
+              'tools-tree-toggle)))
 
 (ert-deftest config-smoke/project-loads-with-search-dependency ()
   (let* ((default-directory config-smoke--root-dir)
