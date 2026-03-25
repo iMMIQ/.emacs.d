@@ -17,7 +17,7 @@
                             (member family (font-family-list)))
                           ui-display-font-preferences)))
       (when font
-        (set-face-attribute 'default nil :font font :height 140)))))
+        (set-face-attribute 'default t :font font :height 140)))))
 
 (defun ui-display-apply ()
   "Apply display shell defaults."
@@ -37,7 +37,9 @@
   (when (fboundp 'tool-bar-mode)
     (tool-bar-mode -1))
   (when (fboundp 'scroll-bar-mode)
-    (scroll-bar-mode -1)))
+    (scroll-bar-mode -1))
+  (when (display-graphic-p)
+    (set-frame-parameter (selected-frame) 'fullscreen 'maximized)))
 
 (provide 'ui-display)
 ;;; display.el ends here

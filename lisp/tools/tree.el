@@ -8,7 +8,11 @@
   "Load tree tooling on demand and open the project tree."
   (interactive)
   (require 'tools-tree "tools/tree")
-  (treemacs))
+  (unless (fboundp 'treemacs)
+    (require 'treemacs nil t))
+  (if (fboundp 'treemacs)
+      (treemacs)
+    (message "Treemacs is unavailable")))
 
 (eval
  (if (featurep 'straight)

@@ -245,6 +245,40 @@ PACKAGE names the optional package whose setup should be forced to fail."
                                                    (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
+(defun config-smoke--tree-entrypoint-load-result-without-treemacs ()
+  "Return the subprocess result when treemacs is unavailable."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer
+          (generate-new-buffer " *config-smoke-tree-entrypoint-missing*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (user-emacs-directory ,config-smoke--root-dir))
+             (defmacro use-package (_name &rest _args) nil)
+             (provide 'use-package)
+             (add-to-list 'load-path ,lisp-dir)
+             (autoload 'tools-tree-toggle "tools/tree" nil t)
+             (tools-tree-toggle)
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :feature (featurep 'tools-tree)
+                     :treemacs-bound (fboundp 'treemacs)))))))
+    (unwind-protect
+        (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
+                                    "--eval" (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :output output
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
+      (kill-buffer output-buffer))))
+
 (defun config-smoke--ui-module-load-result
     (module-path expected-feature apply-function missing-features)
   "Return the subprocess load result for a UI MODULE-PATH.
@@ -662,6 +696,31 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
       (ui-display-apply))
     (should (equal internal-border-width 12))
     (should (equal (alist-get 'internal-border-width default-frame-alist) 12))))
+
+(ert-deftest config-smoke/display-gui-defaults-update-current-and-future-frames ()
+  (let ((default-frame-alist nil)
+        (fullscreen-call nil))
+    (cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _frame) t))
+              ((symbol-function 'font-family-list) (lambda () nil))
+              ((symbol-function 'set-frame-parameter)
+               (lambda (frame parameter value)
+                 (setq fullscreen-call (list frame parameter value)))))
+      (ui-display-apply))
+    (should (equal (alist-get 'fullscreen default-frame-alist) 'maximized))
+    (should (equal fullscreen-call
+                   (list (selected-frame) 'fullscreen 'maximized)))))
+
+(ert-deftest config-smoke/display-font-selection-updates-global-default-face ()
+  (let ((font-call nil))
+    (cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _frame) t))
+              ((symbol-function 'font-family-list)
+               (lambda () '("Monaco" "JetBrains Mono")))
+              ((symbol-function 'set-face-attribute)
+               (lambda (&rest args)
+                 (setq font-call args))))
+      (ui-display-apply))
+    (should (equal font-call
+                   '(default t :font "JetBrains Mono" :height 140)))))
 
 (ert-deftest config-smoke/language-features-load ()
   (config-smoke--ensure-init-loaded)
@@ -1146,6 +1205,15 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
       (should-not feature-before)
       (should feature)
       (should entrypoint))))
+
+(ert-deftest config-smoke/tree-entrypoint-stays-safe-without-treemacs ()
+  (let ((result (config-smoke--tree-entrypoint-load-result-without-treemacs)))
+    (should (equal (plist-get result :status) 0))
+    (pcase-let ((`(:feature ,feature
+                   :treemacs-bound ,treemacs-bound)
+                 (plist-get result :data)))
+      (should feature)
+      (should-not treemacs-bound))))
 
 (ert-deftest config-smoke/tree-entrypoint-is-bound-after-init ()
   (config-smoke--ensure-init-loaded)
