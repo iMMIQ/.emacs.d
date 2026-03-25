@@ -1,0 +1,61 @@
+;;; doom-one-theme.el --- Repo-local One Dark fallback -*- lexical-binding: t; -*-
+
+;;; Commentary:
+
+;;; Code:
+
+(deftheme doom-one "Repo-local fallback for a Doom One style theme.")
+
+(let ((class '((class color) (min-colors 89)))
+      (bg "#282c34")
+      (bg-alt "#21242b")
+      (fg "#bbc2cf")
+      (fg-alt "#5B6268")
+      (base0 "#1B2229")
+      (base2 "#3E4451")
+      (base3 "#5B6268")
+      (base4 "#73797e")
+      (base5 "#ABB2BF")
+      (base8 "#DFDFDF")
+      (blue "#51afef")
+      (cyan "#46D9FF")
+      (green "#98be65")
+      (orange "#da8548")
+      (red "#ff6c6b")
+      (violet "#a9a1e1")
+      (yellow "#ECBE7B"))
+  (custom-theme-set-faces
+   'doom-one
+   `(default ((,class (:background ,bg :foreground ,fg))))
+   `(cursor ((,class (:background ,blue))))
+   `(fringe ((,class (:background ,bg :foreground ,fg-alt))))
+   `(region ((,class (:background ,base2))))
+   `(highlight ((,class (:background ,bg-alt))))
+   `(shadow ((,class (:foreground ,base4))))
+   `(minibuffer-prompt ((,class (:foreground ,blue :weight semi-bold))))
+   `(vertical-border ((,class (:foreground ,base0))))
+   `(link ((,class (:foreground ,cyan :underline t))))
+   `(success ((,class (:foreground ,green :weight semi-bold))))
+   `(warning ((,class (:foreground ,yellow :weight semi-bold))))
+   `(error ((,class (:foreground ,red :weight bold))))
+   `(header-line ((,class (:background ,bg-alt :foreground ,fg))))
+   `(mode-line ((,class (:background ,base2 :foreground ,fg :box nil))))
+   `(mode-line-inactive ((,class (:background ,bg-alt :foreground ,base4 :box nil))))
+   `(line-number ((,class (:background ,bg :foreground ,base3))))
+   `(line-number-current-line ((,class (:background ,bg :foreground ,fg))))
+   `(isearch ((,class (:background ,orange :foreground ,base0 :weight bold))))
+   `(lazy-highlight ((,class (:background ,violet :foreground ,base0))))
+   `(font-lock-builtin-face ((,class (:foreground ,violet))))
+   `(font-lock-comment-face ((,class (:foreground ,base4 :slant italic))))
+   `(font-lock-comment-delimiter-face ((,class (:foreground ,base4 :slant italic))))
+   `(font-lock-constant-face ((,class (:foreground ,violet))))
+   `(font-lock-doc-face ((,class (:foreground ,base5))))
+   `(font-lock-function-name-face ((,class (:foreground ,blue))))
+   `(font-lock-keyword-face ((,class (:foreground ,red))))
+   `(font-lock-string-face ((,class (:foreground ,green))))
+   `(font-lock-type-face ((,class (:foreground ,yellow))))
+   `(font-lock-variable-name-face ((,class (:foreground ,orange))))
+   `(font-lock-warning-face ((,class (:foreground ,yellow :weight bold))))))
+
+(provide-theme 'doom-one)
+;;; doom-one-theme.el ends here

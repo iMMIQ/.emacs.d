@@ -10,6 +10,18 @@
   '("JetBrains Mono" "Iosevka Comfy" "Sarasa Mono SC")
   "Preferred font families for graphical frames.")
 
+(defconst ui-display-font-height 140
+  "Preferred default font height for graphical frames.")
+
+(defun ui-display--apply-font-to-current-and-future-frames (font)
+  "Apply FONT to the current frame and future GUI frames."
+  (set-face-attribute 'default (selected-frame)
+                      :font font
+                      :height ui-display-font-height)
+  (set-face-attribute 'default t
+                      :font font
+                      :height ui-display-font-height))
+
 (defun ui-display--set-first-available-font ()
   "Set the first available preferred font for graphical frames."
   (when (display-graphic-p)
@@ -17,7 +29,7 @@
                             (member family (font-family-list)))
                           ui-display-font-preferences)))
       (when font
-        (set-face-attribute 'default t :font font :height 140)))))
+        (ui-display--apply-font-to-current-and-future-frames font)))))
 
 (defun ui-display-apply ()
   "Apply display shell defaults."

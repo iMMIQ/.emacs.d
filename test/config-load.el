@@ -206,6 +206,45 @@ PACKAGE names the optional package whose setup should be forced to fail."
                                                    (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
+(defun config-smoke--real-init-theme-load-result ()
+  "Return the subprocess result for init using the repo's real theme path."
+  (let* ((default-directory config-smoke--root-dir)
+         (init-file (expand-file-name "init.el" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-real-init-theme*"))
+         (form
+          '(progn
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :init (featurep 'init)
+                     :theme (featurep 'ui-theme)
+                     :themes custom-enabled-themes))))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string
+                                     `(setq user-emacs-directory
+                                            ,config-smoke--root-dir))
+                                    "-l"
+                                    init-file
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let* ((output (buffer-string))
+                   (result-start (string-match "RESULT " output)))
+              (list :status status
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))
+                    :output output))))
+      (kill-buffer output-buffer))))
+
 (defun config-smoke--tree-entrypoint-load-result ()
   "Return the subprocess load result for the lazy tree entrypoint."
   (let* ((default-directory config-smoke--root-dir)
@@ -494,7 +533,7 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
                  (plist-get result :data)))
       (should init)
       (should theme)
-      (should (equal themes '(deeper-blue))))))
+      (should (equal themes '(doom-one))))))
 
 (ert-deftest config-smoke/modeline-setup-stays-safe-without-doom-modeline ()
   (let ((result (config-smoke--ui-module-load-result
@@ -710,17 +749,21 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
     (should (equal fullscreen-call
                    (list (selected-frame) 'fullscreen 'maximized)))))
 
-(ert-deftest config-smoke/display-font-selection-updates-global-default-face ()
-  (let ((font-call nil))
+(ert-deftest config-smoke/display-font-selection-updates-current-and-future-faces ()
+  (let ((font-calls nil))
     (cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _frame) t))
               ((symbol-function 'font-family-list)
                (lambda () '("Monaco" "JetBrains Mono")))
               ((symbol-function 'set-face-attribute)
                (lambda (&rest args)
-                 (setq font-call args))))
+                 (when (eq (car args) 'default)
+                   (push args font-calls)))))
       (ui-display-apply))
-    (should (equal font-call
-                   '(default t :font "JetBrains Mono" :height 140)))))
+    (should (equal (nreverse font-calls)
+                   (list
+                    (list 'default (selected-frame)
+                          :font "JetBrains Mono" :height 140)
+                    '(default t :font "JetBrains Mono" :height 140))))))
 
 (ert-deftest config-smoke/language-features-load ()
   (config-smoke--ensure-init-loaded)
@@ -1145,6 +1188,15 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
       (kill-buffer output-buffer)
       (delete-directory child-dir t)
       (delete-directory child-home t))))
+
+(ert-deftest config-smoke/init-loads-real-doom-one-theme-from-repo ()
+  (let ((result (config-smoke--real-init-theme-load-result)))
+    (should (equal (plist-get result :status) 0))
+    (pcase-let ((`(:init ,init :theme ,theme :themes ,themes)
+                 (plist-get result :data)))
+      (should init)
+      (should theme)
+      (should (equal themes '(doom-one))))))
 
 (ert-deftest config-smoke/init-loads ()
   (config-smoke--ensure-init-loaded)
