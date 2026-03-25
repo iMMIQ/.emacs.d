@@ -170,6 +170,41 @@ PACKAGE names the optional package whose setup should be forced to fail."
       (kill-buffer output-buffer)
       )))
 
+(defun config-smoke--init-load-result-with-ui-package-failures ()
+  "Return the subprocess result for init when optional UI packages fail."
+  (let* ((default-directory config-smoke--root-dir)
+         (init-file (expand-file-name "init.el" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-ui-fallback*"))
+         (form
+          `(let ((user-emacs-directory ,config-smoke--root-dir)
+                 (load-prefer-newer t))
+             (require 'cl-lib)
+             (let ((real-require (symbol-function 'require)))
+               (cl-letf (((symbol-function 'require)
+                          (lambda (feature &optional filename noerror)
+                            (if (memq feature '(doom-themes doom-modeline dashboard nerd-icons))
+                                (if noerror nil (signal 'error (list feature)))
+                              (funcall real-require feature filename noerror)))))
+                 (load ,init-file nil 'nomessage)))
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :init (featurep 'init)
+                     :theme (featurep 'ui-theme)))))))
+    (unwind-protect
+        (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
+                                    "--eval" (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
+      (kill-buffer output-buffer))))
+
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
   (dolist (feature (append '(core-paths
@@ -216,10 +251,29 @@ PACKAGE names the optional package whose setup should be forced to fail."
       (should music)
       (should theme))))
 
+(ert-deftest config-smoke/init-loads-when-optional-ui-packages-are-missing ()
+  (let ((result (config-smoke--init-load-result-with-ui-package-failures)))
+    (should (equal (plist-get result :status) 0))
+    (pcase-let ((`(:init ,init :theme ,theme)
+                 (plist-get result :data)))
+      (should init)
+      (should theme))))
+
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
   (should (featurep 'ui-display))
   (should (featurep 'ui-theme)))
+
+(ert-deftest config-smoke/ui-theme-default-is-doom-one ()
+  (config-smoke--ensure-init-loaded)
+  (should (eq ui-theme-default 'doom-one)))
+
+(ert-deftest config-smoke/display-defaults-are-modern-but-scoped ()
+  (config-smoke--ensure-init-loaded)
+  (should (equal frame-title-format nil))
+  (should (< (abs (- line-spacing 0.16)) 0.0001))
+  (should (memq #'display-line-numbers-mode prog-mode-hook))
+  (should-not (bound-and-true-p global-display-line-numbers-mode)))
 
 (ert-deftest config-smoke/language-features-load ()
   (config-smoke--ensure-init-loaded)
