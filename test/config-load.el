@@ -245,6 +245,73 @@ PACKAGE names the optional package whose setup should be forced to fail."
                     :output output))))
       (kill-buffer output-buffer))))
 
+(defun config-smoke--ui-theme-load-result-with-package-theme-failure ()
+  "Return the subprocess result when package-backed `doom-one' fails to load.
+The subprocess simulates `doom-themes' being present while the first
+`doom-one' load fails, so the repo-local fallback should be used."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (theme-file (expand-file-name "lisp/ui/theme.el" config-smoke--root-dir))
+         (local-theme-dir
+          (expand-file-name "lisp/themes" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-theme-fallback*"))
+         (form
+         `(let ((load-prefer-newer t)
+                 (user-emacs-directory ,config-smoke--root-dir)
+                 (custom-enabled-themes nil)
+                 (custom-theme-load-path nil)
+                 (theme-load-attempts nil))
+             (require 'cl-lib)
+             (defun ui-startup-apply ())
+             (defun ui-display-apply ())
+             (defun ui-modeline-apply ())
+             (provide 'ui-startup)
+             (provide 'ui-display)
+             (provide 'ui-modeline)
+             (provide 'doom-themes)
+             (add-to-list 'load-path ,lisp-dir)
+             (cl-letf (((symbol-function 'load-theme)
+                        (lambda (theme &optional _no-confirm _no-enable)
+                          (push (list theme (copy-sequence custom-theme-load-path))
+                                theme-load-attempts)
+                          (cond
+                           ((eq theme 'doom-one)
+                            (if (member ,local-theme-dir custom-theme-load-path)
+                                (progn
+                                  (setq custom-enabled-themes '(doom-one))
+                                  t)
+                              (signal 'error '("simulated package doom-one failure"))))
+                           ((eq theme 'deeper-blue)
+                            (setq custom-enabled-themes '(deeper-blue))
+                            t)
+                           (t
+                            (signal 'error (list "unexpected theme" theme))))))
+                       ((symbol-function 'disable-theme)
+                        (lambda (_theme) nil)))
+               (load ,theme-file nil 'nomessage)
+               (ui-theme-apply)
+               (princ "RESULT ")
+               (princ
+                (prin1-to-string
+                 (list :feature (featurep 'ui-theme)
+                       :themes custom-enabled-themes
+                       :custom-theme-load-path custom-theme-load-path
+                       :attempts (nreverse theme-load-attempts))))))))
+    (unwind-protect
+        (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
+                                    "--eval" (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :output output
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
+      (kill-buffer output-buffer))))
+
 (defun config-smoke--tree-entrypoint-load-result ()
   "Return the subprocess load result for the lazy tree entrypoint."
   (let* ((default-directory config-smoke--root-dir)
@@ -269,6 +336,43 @@ PACKAGE names the optional package whose setup should be forced to fail."
                  (list :feature-before feature-before
                        :feature (featurep 'tools-tree)
                        :entrypoint entrypoint-ran)))))))
+    (unwind-protect
+        (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
+                                    "--eval" (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :output output
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
+      (kill-buffer output-buffer))))
+
+(defun config-smoke--tree-entrypoint-load-result-with-tools-tree-load-failure ()
+  "Return the subprocess result when loading `tools/tree.el' setup fails."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer
+          (generate-new-buffer " *config-smoke-tree-entrypoint-load-failure*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (user-emacs-directory ,config-smoke--root-dir))
+             (defmacro use-package (name &rest _args)
+               (if (eq name 'treemacs)
+                   (signal 'error '("simulated treemacs setup failure"))
+                 nil))
+             (provide 'use-package)
+             (add-to-list 'load-path ,lisp-dir)
+             (autoload 'tools-tree-toggle "tools/tree" nil t)
+             (tools-tree-toggle)
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :feature (featurep 'tools-tree)
+                     :treemacs-bound (fboundp 'treemacs)))))))
     (unwind-protect
         (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
                                     "--eval" (prin1-to-string form))))
@@ -534,6 +638,21 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
       (should init)
       (should theme)
       (should (equal themes '(doom-one))))))
+
+(ert-deftest config-smoke/ui-theme-falls-back-to-repo-doom-one-when-package-theme-load-fails ()
+  (let ((result (config-smoke--ui-theme-load-result-with-package-theme-failure)))
+    (should (equal (plist-get result :status) 0))
+    (pcase-let ((`(:feature ,feature
+                   :themes ,themes
+                   :custom-theme-load-path ,theme-load-path
+                   :attempts ,attempts)
+                 (plist-get result :data)))
+      (should feature)
+      (should (equal themes '(doom-one)))
+      (should (member (expand-file-name "lisp/themes" config-smoke--root-dir)
+                      theme-load-path))
+      (should (equal (mapcar #'car attempts) '(doom-one doom-one)))
+      (should-not (memq 'deeper-blue (mapcar #'car attempts))))))
 
 (ert-deftest config-smoke/modeline-setup-stays-safe-without-doom-modeline ()
   (let ((result (config-smoke--ui-module-load-result
@@ -1260,6 +1379,16 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
 
 (ert-deftest config-smoke/tree-entrypoint-stays-safe-without-treemacs ()
   (let ((result (config-smoke--tree-entrypoint-load-result-without-treemacs)))
+    (should (equal (plist-get result :status) 0))
+    (pcase-let ((`(:feature ,feature
+                   :treemacs-bound ,treemacs-bound)
+                 (plist-get result :data)))
+      (should feature)
+      (should-not treemacs-bound))))
+
+(ert-deftest config-smoke/tree-entrypoint-stays-safe-when-tools-tree-load-fails ()
+  (let ((result
+         (config-smoke--tree-entrypoint-load-result-with-tools-tree-load-failure)))
     (should (equal (plist-get result :status) 0))
     (pcase-let ((`(:feature ,feature
                    :treemacs-bound ,treemacs-bound)

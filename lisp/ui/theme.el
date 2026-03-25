@@ -35,6 +35,14 @@
   (when (file-directory-p ui-theme--local-theme-directory)
     (add-to-list 'custom-theme-load-path ui-theme--local-theme-directory)))
 
+(defun ui-theme--try-load-default-theme ()
+  "Load `ui-theme-default' and return non-nil on success."
+  (condition-case nil
+      (progn
+        (load-theme ui-theme-default t)
+        t)
+    (error nil)))
+
 (defun ui-icon-capable-p ()
   "Return non-nil when nerd icons can be displayed in the current frame."
   (and (display-graphic-p)
@@ -45,23 +53,12 @@
 (defun ui-theme--load-default-theme ()
   "Load the configured default theme with a safe fallback."
   (mapc #'disable-theme (copy-sequence custom-enabled-themes))
-  (cond
-   ((require 'doom-themes nil t)
-    (unless (condition-case nil
-                (progn
-                  (load-theme ui-theme-default t)
-                  t)
-              (error nil))
-      (ignore-errors (load-theme 'deeper-blue t))))
-   ((progn
-      (ui-theme--prepare-local-theme-directory)
-      (condition-case nil
-          (progn
-            (load-theme ui-theme-default t)
-            t)
-        (error nil))))
-   (t
-    (ignore-errors (load-theme 'deeper-blue t)))))
+  (unless (or (and (require 'doom-themes nil t)
+                   (ui-theme--try-load-default-theme))
+              (progn
+                (ui-theme--prepare-local-theme-directory)
+                (ui-theme--try-load-default-theme)))
+    (ignore-errors (load-theme 'deeper-blue t))))
 
 (defun ui-theme-apply ()
   "Apply the rebuilt UI shell defaults."
