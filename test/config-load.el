@@ -235,6 +235,10 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
                              forms))))
              (provide 'use-package)
              (add-to-list 'load-path ,lisp-dir)
+             (setq line-number-mode nil
+                   column-number-mode nil
+                   size-indication-mode nil
+                   inhibit-startup-screen nil)
              (let ((real-require (symbol-function 'require)))
                (cl-letf (((symbol-function 'require)
                           (lambda (feature &optional filename noerror)
@@ -247,7 +251,10 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
                  (princ
                   (prin1-to-string
                    (list :feature (featurep ',expected-feature)
-                         :applied t))))))))
+                         :line-number line-number-mode
+                         :column-number column-number-mode
+                         :size-indication size-indication-mode
+                         :startup-screen inhibit-startup-screen))))))))
     (unwind-protect
         (let ((status (call-process "emacs"
                                     nil
@@ -331,10 +338,11 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
                  'ui-modeline-apply
                  '(doom-modeline nerd-icons))))
     (should (equal (plist-get result :status) 0))
-    (pcase-let ((`(:feature ,feature :applied ,applied)
-                 (plist-get result :data)))
-      (should feature)
-      (should applied))))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :line-number))
+      (should (plist-get data :column-number))
+      (should (plist-get data :size-indication)))))
 
 (ert-deftest config-smoke/startup-setup-stays-safe-without-dashboard ()
   (let ((result (config-smoke--ui-module-load-result
@@ -343,10 +351,9 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
                  'ui-startup-apply
                  '(dashboard nerd-icons))))
     (should (equal (plist-get result :status) 0))
-    (pcase-let ((`(:feature ,feature :applied ,applied)
-                 (plist-get result :data)))
-      (should feature)
-      (should applied))))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :startup-screen)))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
