@@ -190,7 +190,8 @@ PACKAGE names the optional package whose setup should be forced to fail."
              (princ
               (prin1-to-string
                (list :init (featurep 'init)
-                     :theme (featurep 'ui-theme)))))))
+                     :theme (featurep 'ui-theme)
+                     :themes custom-enabled-themes))))))
     (unwind-protect
         (let ((status (call-process "emacs" nil output-buffer nil "--batch" "-Q"
                                     "--eval" (prin1-to-string form))))
@@ -254,10 +255,11 @@ PACKAGE names the optional package whose setup should be forced to fail."
 (ert-deftest config-smoke/init-loads-when-optional-ui-packages-are-missing ()
   (let ((result (config-smoke--init-load-result-with-ui-package-failures)))
     (should (equal (plist-get result :status) 0))
-    (pcase-let ((`(:init ,init :theme ,theme)
+    (pcase-let ((`(:init ,init :theme ,theme :themes ,themes)
                  (plist-get result :data)))
       (should init)
-      (should theme))))
+      (should theme)
+      (should (equal themes '(deeper-blue))))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
@@ -586,6 +588,46 @@ PACKAGE names the optional package whose setup should be forced to fail."
           (with-current-buffer output-buffer
             (should (equal (read (buffer-string))
                            '(doom-one)))))
+      (kill-buffer output-buffer))))
+
+(ert-deftest config-smoke/ui-theme-falls-back-when-doom-one-load-fails ()
+  (let* ((default-directory config-smoke--root-dir)
+         (theme-file
+          (expand-file-name "lisp/ui/theme.el" config-smoke--root-dir))
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-ui-theme-fallback*"))
+         (form
+          `(let ((load-prefer-newer t)
+                 (custom-enabled-themes '(wombat)))
+             (require 'cl-lib)
+             (add-to-list 'load-path ,lisp-dir)
+             (load ,theme-file nil 'nomessage)
+             (let ((real-require (symbol-function 'require)))
+               (cl-letf (((symbol-function 'require)
+                          (lambda (feature &optional filename noerror)
+                            (if (eq feature 'doom-themes)
+                                'doom-themes
+                              (funcall real-require feature filename noerror))))
+                         ((symbol-function 'load-theme)
+                          (lambda (theme &optional _no-confirm _no-enable)
+                            (if (eq theme 'doom-one)
+                                (signal 'error '("simulated doom-one failure"))
+                              (setq custom-enabled-themes (list theme))))))
+                 (ui-theme-apply)))
+             (princ (prin1-to-string custom-enabled-themes)))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (should (equal status 0))
+          (with-current-buffer output-buffer
+            (should (equal (read (buffer-string))
+                           '(deeper-blue)))))
       (kill-buffer output-buffer))))
 
 (ert-deftest config-smoke/bootstrap-ui-apply-is-tolerant ()

@@ -36,8 +36,12 @@
 (defun ui-theme--load-default-theme ()
   "Load the configured default theme with a safe fallback."
   (mapc #'disable-theme (copy-sequence custom-enabled-themes))
-  (if (require 'doom-themes nil t)
-      (load-theme ui-theme-default t)
+  (unless (and (require 'doom-themes nil t)
+               (condition-case nil
+                   (progn
+                     (load-theme ui-theme-default t)
+                     t)
+                 (error nil)))
     (ignore-errors (load-theme 'deeper-blue t))))
 
 (defun ui-theme-apply ()
