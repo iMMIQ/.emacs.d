@@ -6,6 +6,13 @@
 
 (declare-function ui-icon-capable-p "ui/theme")
 
+(defun ui-modeline--icon-capable-p ()
+  "Return non-nil when icon-capable UI can be used safely."
+  (condition-case nil
+      (and (fboundp 'ui-icon-capable-p)
+           (ui-icon-capable-p))
+    (error nil)))
+
 (defun ui-modeline-apply ()
   "Apply lightweight modeline defaults."
   (line-number-mode 1)
@@ -20,11 +27,9 @@
           doom-modeline-minor-modes nil
           doom-modeline-buffer-encoding nil
           doom-modeline-indent-info nil
-          doom-modeline-icon (and (fboundp 'ui-icon-capable-p)
-                                   (ui-icon-capable-p)))
+          doom-modeline-icon (ui-modeline--icon-capable-p))
     (doom-modeline-mode 1))
-  (unless (and (fboundp 'ui-icon-capable-p)
-               (ui-icon-capable-p))
+  (unless (ui-modeline--icon-capable-p)
     (setq doom-modeline-icon nil)))
 
 (provide 'ui-modeline)

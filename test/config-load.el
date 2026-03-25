@@ -277,11 +277,11 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
       (kill-buffer output-buffer))))
 
 (defun config-smoke--ui-module-load-result-with-stubs
-    (module-path expected-feature apply-function stub-features icon-capable-p)
+    (module-path expected-feature apply-function stub-features icon-capable-form)
   "Return the subprocess load result for a UI MODULE-PATH with stub packages.
 EXPECTED-FEATURE is checked after loading, APPLY-FUNCTION is invoked,
 STUB-FEATURES maps features to forms evaluated before the apply function,
-and ICON-CAPABLE-P is the return value for the shared icon capability probe."
+and ICON-CAPABLE-FORM defines the shared icon capability probe."
   (let* ((default-directory config-smoke--root-dir)
          (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
          (full-path (expand-file-name module-path config-smoke--root-dir))
@@ -308,8 +308,9 @@ and ICON-CAPABLE-P is the return value for the shared icon capability probe."
                    dashboard-set-heading-icons t
                    dashboard-set-file-icons t
                    dashboard-items nil
-                   dashboard-setup-startup-hook-count 0)
-             (defun ui-icon-capable-p () ,icon-capable-p)
+                   dashboard-setup-startup-hook-count 0
+                   ui-startup--dashboard-hook-installed nil)
+             (defun ui-icon-capable-p () ,icon-capable-form)
              ,@(mapcar #'cdr stub-features)
              (load ,full-path nil 'nomessage)
              (funcall #',apply-function)
@@ -455,6 +456,24 @@ and ICON-CAPABLE-P is the return value for the shared icon capability probe."
       (should-not (plist-get data :doom-modeline-indent-info))
       (should-not (plist-get data :doom-modeline-icon)))))
 
+(ert-deftest config-smoke/modeline-uses-plain-text-fallback-when-icon-check-errors ()
+  (let* ((stubs
+          '((doom-modeline
+             .
+             (progn
+               (defun doom-modeline-mode (&optional _arg))
+               (provide 'doom-modeline)))))
+         (result (config-smoke--ui-module-load-result-with-stubs
+                  "lisp/ui/modeline.el"
+                  'ui-modeline
+                  'ui-modeline-apply
+                  stubs
+                  '(error "icon probe failed"))))
+    (should (equal (plist-get result :status) 0))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should-not (plist-get data :doom-modeline-icon)))))
+
 (ert-deftest config-smoke/startup-setup-stays-safe-without-dashboard ()
   (let ((result (config-smoke--ui-module-load-result
                  "lisp/ui/startup.el"
@@ -494,6 +513,31 @@ and ICON-CAPABLE-P is the return value for the shared icon capability probe."
       (should-not (plist-get data :dashboard-set-file-icons))
       (should (equal (plist-get data :dashboard-items)
                      '((recents . 6) (projects . 5) (bookmarks . 4))))
+      (should (equal (plist-get data :dashboard-hook-count) 1)))))
+
+(ert-deftest config-smoke/startup-keeps-dashboard-hook-one-time-and-icons-safe-on-error ()
+  (let* ((stubs
+          '((dashboard
+             .
+             (progn
+               (defun dashboard-setup-startup-hook ()
+                 (setq dashboard-setup-startup-hook-count
+                       (1+ dashboard-setup-startup-hook-count)))
+               (provide 'dashboard)))))
+         (result (config-smoke--ui-module-load-result-with-stubs
+                  "lisp/ui/startup.el"
+                  'ui-startup
+                  '(lambda ()
+                     (ui-startup-apply)
+                     (ui-startup-apply))
+                  stubs
+                  '(error "icon probe failed"))))
+    (should (equal (plist-get result :status) 0))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :startup-screen))
+      (should-not (plist-get data :dashboard-set-heading-icons))
+      (should-not (plist-get data :dashboard-set-file-icons))
       (should (equal (plist-get data :dashboard-hook-count) 1)))))
 
 (ert-deftest config-smoke/display-features-load ()
