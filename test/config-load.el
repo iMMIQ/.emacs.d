@@ -207,10 +207,10 @@ PACKAGE names the optional package whose setup should be forced to fail."
       (kill-buffer output-buffer))))
 
 (defun config-smoke--ui-module-load-result
-    (module-path expected-feature missing-features)
+    (module-path expected-feature apply-function missing-features)
   "Return the subprocess load result for a UI MODULE-PATH.
-EXPECTED-FEATURE is checked after loading while MISSING-FEATURES are
-simulated as unavailable `require' targets."
+EXPECTED-FEATURE is checked after loading, APPLY-FUNCTION is invoked,
+and MISSING-FEATURES are simulated as unavailable `require' targets."
   (let* ((default-directory config-smoke--root-dir)
          (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
          (full-path (expand-file-name module-path config-smoke--root-dir))
@@ -218,7 +218,21 @@ simulated as unavailable `require' targets."
          (form
           `(let ((load-prefer-newer t))
              (require 'cl-lib)
-             (defmacro use-package (_name &rest _args) nil)
+             (defmacro use-package (name &rest args)
+               (let (forms)
+                 (while args
+                   (let ((keyword (pop args))
+                         (value (pop args)))
+                     (when (memq keyword '(:preface :init :config))
+                       (setq forms
+                             (append forms
+                                     (if (and (listp value)
+                                              (eq (car-safe value) 'progn))
+                                         (cdr value)
+                                       (list value)))))))
+                 (cons 'progn
+                       (cons (list 'require (list 'quote name))
+                             forms))))
              (provide 'use-package)
              (add-to-list 'load-path ,lisp-dir)
              (let ((real-require (symbol-function 'require)))
@@ -227,11 +241,13 @@ simulated as unavailable `require' targets."
                             (if (memq feature ',missing-features)
                                 (if noerror nil (signal 'error (list feature)))
                               (funcall real-require feature filename noerror)))))
-                 (load ,full-path nil 'nomessage)))
-             (princ "RESULT ")
-             (princ
-              (prin1-to-string
-               (list :feature (featurep ',expected-feature)))))))
+                 (load ,full-path nil 'nomessage)
+                 (funcall #',apply-function)
+                 (princ "RESULT ")
+                 (princ
+                  (prin1-to-string
+                   (list :feature (featurep ',expected-feature)
+                         :applied t))))))))
     (unwind-protect
         (let ((status (call-process "emacs"
                                     nil
@@ -246,12 +262,11 @@ simulated as unavailable `require' targets."
                   (result-start nil))
               (setq result-start (string-match "RESULT " output))
               (list :status status
-                    :feature (and result-start
-                                  (plist-get
-                                   (read (substring output
-                                                    (+ result-start
-                                                       (length "RESULT "))))
-                                   :feature))))))
+                    :output output
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
 (ert-deftest config-smoke/startup-skeleton-loads ()
@@ -313,17 +328,25 @@ simulated as unavailable `require' targets."
   (let ((result (config-smoke--ui-module-load-result
                  "lisp/ui/modeline.el"
                  'ui-modeline
+                 'ui-modeline-apply
                  '(doom-modeline nerd-icons))))
     (should (equal (plist-get result :status) 0))
-    (should (plist-get result :feature))))
+    (pcase-let ((`(:feature ,feature :applied ,applied)
+                 (plist-get result :data)))
+      (should feature)
+      (should applied))))
 
 (ert-deftest config-smoke/startup-setup-stays-safe-without-dashboard ()
   (let ((result (config-smoke--ui-module-load-result
                  "lisp/ui/startup.el"
                  'ui-startup
+                 'ui-startup-apply
                  '(dashboard nerd-icons))))
     (should (equal (plist-get result :status) 0))
-    (should (plist-get result :feature))))
+    (pcase-let ((`(:feature ,feature :applied ,applied)
+                 (plist-get result :data)))
+      (should feature)
+      (should applied))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
