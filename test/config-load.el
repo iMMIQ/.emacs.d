@@ -206,6 +206,54 @@ PACKAGE names the optional package whose setup should be forced to fail."
                                                    (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
+(defun config-smoke--ui-module-load-result
+    (module-path expected-feature missing-features)
+  "Return the subprocess load result for a UI MODULE-PATH.
+EXPECTED-FEATURE is checked after loading while MISSING-FEATURES are
+simulated as unavailable `require' targets."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (full-path (expand-file-name module-path config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-ui-module*"))
+         (form
+          `(let ((load-prefer-newer t))
+             (require 'cl-lib)
+             (defmacro use-package (_name &rest _args) nil)
+             (provide 'use-package)
+             (add-to-list 'load-path ,lisp-dir)
+             (let ((real-require (symbol-function 'require)))
+               (cl-letf (((symbol-function 'require)
+                          (lambda (feature &optional filename noerror)
+                            (if (memq feature ',missing-features)
+                                (if noerror nil (signal 'error (list feature)))
+                              (funcall real-require feature filename noerror)))))
+                 (load ,full-path nil 'nomessage)))
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :feature (featurep ',expected-feature)))))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :feature (and result-start
+                                  (plist-get
+                                   (read (substring output
+                                                    (+ result-start
+                                                       (length "RESULT "))))
+                                   :feature))))))
+      (kill-buffer output-buffer))))
+
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
   (dolist (feature (append '(core-paths
@@ -260,6 +308,22 @@ PACKAGE names the optional package whose setup should be forced to fail."
       (should init)
       (should theme)
       (should (equal themes '(deeper-blue))))))
+
+(ert-deftest config-smoke/modeline-setup-stays-safe-without-doom-modeline ()
+  (let ((result (config-smoke--ui-module-load-result
+                 "lisp/ui/modeline.el"
+                 'ui-modeline
+                 '(doom-modeline nerd-icons))))
+    (should (equal (plist-get result :status) 0))
+    (should (plist-get result :feature))))
+
+(ert-deftest config-smoke/startup-setup-stays-safe-without-dashboard ()
+  (let ((result (config-smoke--ui-module-load-result
+                 "lisp/ui/startup.el"
+                 'ui-startup
+                 '(dashboard nerd-icons))))
+    (should (equal (plist-get result :status) 0))
+    (should (plist-get result :feature))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
