@@ -4,11 +4,28 @@
 
 ;;; Code:
 
+(declare-function ui-icon-capable-p "ui/theme")
+
 (defun ui-modeline-apply ()
   "Apply lightweight modeline defaults."
   (line-number-mode 1)
   (column-number-mode 1)
-  (size-indication-mode 1))
+  (size-indication-mode 1)
+  (when (condition-case nil
+            (require 'doom-modeline nil t)
+          (error nil))
+    (setq doom-modeline-height 24
+          doom-modeline-bar-width 3
+          doom-modeline-buffer-file-name-style 'truncate-upto-project
+          doom-modeline-minor-modes nil
+          doom-modeline-buffer-encoding nil
+          doom-modeline-indent-info nil
+          doom-modeline-icon (and (fboundp 'ui-icon-capable-p)
+                                   (ui-icon-capable-p)))
+    (doom-modeline-mode 1))
+  (unless (and (fboundp 'ui-icon-capable-p)
+               (ui-icon-capable-p))
+    (setq doom-modeline-icon nil)))
 
 (provide 'ui-modeline)
 ;;; modeline.el ends here

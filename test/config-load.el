@@ -276,6 +276,89 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
                                                    (length "RESULT ")))))))))
       (kill-buffer output-buffer))))
 
+(defun config-smoke--ui-module-load-result-with-stubs
+    (module-path expected-feature apply-function stub-features icon-capable-p)
+  "Return the subprocess load result for a UI MODULE-PATH with stub packages.
+EXPECTED-FEATURE is checked after loading, APPLY-FUNCTION is invoked,
+STUB-FEATURES maps features to forms evaluated before the apply function,
+and ICON-CAPABLE-P is the return value for the shared icon capability probe."
+  (let* ((default-directory config-smoke--root-dir)
+         (lisp-dir (expand-file-name "lisp" config-smoke--root-dir))
+         (full-path (expand-file-name module-path config-smoke--root-dir))
+         (output-buffer (generate-new-buffer " *config-smoke-ui-module-stubs*"))
+         (form
+          `(let ((load-prefer-newer t))
+             (add-to-list 'load-path ,lisp-dir)
+             (setq line-number-mode nil
+                   column-number-mode nil
+                   size-indication-mode nil
+                   inhibit-startup-screen nil
+                   doom-modeline-height nil
+                   doom-modeline-bar-width nil
+                   doom-modeline-buffer-file-name-style nil
+                   doom-modeline-minor-modes t
+                   doom-modeline-buffer-encoding t
+                   doom-modeline-indent-info t
+                   doom-modeline-icon t
+                   dashboard-banner-logo-title nil
+                   dashboard-startup-banner nil
+                   dashboard-center-content nil
+                   dashboard-show-shortcuts t
+                   dashboard-footer-messages t
+                   dashboard-set-heading-icons t
+                   dashboard-set-file-icons t
+                   dashboard-items nil
+                   dashboard-setup-startup-hook-count 0)
+             (defun ui-icon-capable-p () ,icon-capable-p)
+             ,@(mapcar #'cdr stub-features)
+             (load ,full-path nil 'nomessage)
+             (funcall #',apply-function)
+             (princ "RESULT ")
+             (princ
+              (prin1-to-string
+               (list :feature (featurep ',expected-feature)
+                     :line-number line-number-mode
+                     :column-number column-number-mode
+                     :size-indication size-indication-mode
+                     :startup-screen inhibit-startup-screen
+                     :doom-modeline-height doom-modeline-height
+                     :doom-modeline-bar-width doom-modeline-bar-width
+                     :doom-modeline-buffer-file-name-style
+                     doom-modeline-buffer-file-name-style
+                     :doom-modeline-minor-modes doom-modeline-minor-modes
+                     :doom-modeline-buffer-encoding doom-modeline-buffer-encoding
+                     :doom-modeline-indent-info doom-modeline-indent-info
+                     :doom-modeline-icon doom-modeline-icon
+                     :dashboard-banner-logo-title dashboard-banner-logo-title
+                     :dashboard-startup-banner dashboard-startup-banner
+                     :dashboard-center-content dashboard-center-content
+                     :dashboard-show-shortcuts dashboard-show-shortcuts
+                     :dashboard-footer-messages dashboard-footer-messages
+                     :dashboard-set-heading-icons dashboard-set-heading-icons
+                     :dashboard-set-file-icons dashboard-set-file-icons
+                     :dashboard-items dashboard-items
+                     :dashboard-hook-count dashboard-setup-startup-hook-count))))))
+    (unwind-protect
+        (let ((status (call-process "emacs"
+                                    nil
+                                    output-buffer
+                                    nil
+                                    "--batch"
+                                    "-Q"
+                                    "--eval"
+                                    (prin1-to-string form))))
+          (with-current-buffer output-buffer
+            (let ((output (buffer-string))
+                  (result-start nil))
+              (setq result-start (string-match "RESULT " output))
+              (list :status status
+                    :output output
+                    :data (and result-start
+                               (read (substring output
+                                                (+ result-start
+                                                   (length "RESULT ")))))))))
+      (kill-buffer output-buffer))))
+
 (ert-deftest config-smoke/startup-skeleton-loads ()
   (config-smoke--ensure-init-loaded)
   (dolist (feature (append '(core-paths
@@ -344,6 +427,34 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
       (should (plist-get data :column-number))
       (should (plist-get data :size-indication)))))
 
+(ert-deftest config-smoke/modeline-configures-doom-modeline-when-available ()
+  (let* ((stubs
+          '((doom-modeline
+             .
+             (progn
+               (defun doom-modeline-mode (&optional _arg))
+               (provide 'doom-modeline)))))
+         (result (config-smoke--ui-module-load-result-with-stubs
+                  "lisp/ui/modeline.el"
+                  'ui-modeline
+                  'ui-modeline-apply
+                  stubs
+                  nil)))
+    (should (equal (plist-get result :status) 0))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :line-number))
+      (should (plist-get data :column-number))
+      (should (plist-get data :size-indication))
+      (should (equal (plist-get data :doom-modeline-height) 24))
+      (should (equal (plist-get data :doom-modeline-bar-width) 3))
+      (should (eq (plist-get data :doom-modeline-buffer-file-name-style)
+                  'truncate-upto-project))
+      (should-not (plist-get data :doom-modeline-minor-modes))
+      (should-not (plist-get data :doom-modeline-buffer-encoding))
+      (should-not (plist-get data :doom-modeline-indent-info))
+      (should-not (plist-get data :doom-modeline-icon)))))
+
 (ert-deftest config-smoke/startup-setup-stays-safe-without-dashboard ()
   (let ((result (config-smoke--ui-module-load-result
                  "lisp/ui/startup.el"
@@ -354,6 +465,36 @@ and MISSING-FEATURES are simulated as unavailable `require' targets."
     (let ((data (plist-get result :data)))
       (should (plist-get data :feature))
       (should (plist-get data :startup-screen)))))
+
+(ert-deftest config-smoke/startup-configures-dashboard-when-available ()
+  (let* ((stubs
+          '((dashboard
+             .
+             (progn
+               (defun dashboard-setup-startup-hook ()
+                 (setq dashboard-setup-startup-hook-count
+                       (1+ dashboard-setup-startup-hook-count)))
+               (provide 'dashboard)))))
+         (result (config-smoke--ui-module-load-result-with-stubs
+                  "lisp/ui/startup.el"
+                  'ui-startup
+                  'ui-startup-apply
+                  stubs
+                  nil)))
+    (should (equal (plist-get result :status) 0))
+    (let ((data (plist-get result :data)))
+      (should (plist-get data :feature))
+      (should (plist-get data :startup-screen))
+      (should (equal (plist-get data :dashboard-banner-logo-title) "Emacs"))
+      (should (eq (plist-get data :dashboard-startup-banner) 'official))
+      (should (plist-get data :dashboard-center-content))
+      (should-not (plist-get data :dashboard-show-shortcuts))
+      (should-not (plist-get data :dashboard-footer-messages))
+      (should-not (plist-get data :dashboard-set-heading-icons))
+      (should-not (plist-get data :dashboard-set-file-icons))
+      (should (equal (plist-get data :dashboard-items)
+                     '((recents . 6) (projects . 5) (bookmarks . 4))))
+      (should (equal (plist-get data :dashboard-hook-count) 1)))))
 
 (ert-deftest config-smoke/display-features-load ()
   (config-smoke--ensure-init-loaded)
