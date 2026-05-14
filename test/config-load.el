@@ -848,12 +848,19 @@ and ICON-CAPABLE-FORM defines the shared icon capability probe."
 
 (ert-deftest config-smoke/display-gui-defaults-add-subtle-padding ()
   (let ((default-frame-alist nil)
-        (internal-border-width 0))
+        (internal-border-width 0)
+        (current-frame-border-call nil))
     (cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _frame) t))
-              ((symbol-function 'font-family-list) (lambda () nil)))
+              ((symbol-function 'font-family-list) (lambda () nil))
+              ((symbol-function 'set-frame-parameter)
+               (lambda (frame parameter value)
+                 (when (eq parameter 'internal-border-width)
+                   (setq current-frame-border-call (list frame parameter value))))))
       (ui-display-apply))
     (should (equal internal-border-width 12))
-    (should (equal (alist-get 'internal-border-width default-frame-alist) 12))))
+    (should (equal (alist-get 'internal-border-width default-frame-alist) 12))
+    (should (equal current-frame-border-call
+                   (list (selected-frame) 'internal-border-width 12)))))
 
 (ert-deftest config-smoke/display-gui-defaults-update-current-and-future-frames ()
   (let ((default-frame-alist nil)

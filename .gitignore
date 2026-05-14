@@ -8,5 +8,6 @@ emms
 session.*
 projectile-bookmarks.eld
 pyim-dcache
+*.elc
 *~
 #*#
